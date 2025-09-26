@@ -1,21 +1,76 @@
 \documentclass{article}
-\usepackage{graphicx} % Required for inserting images
+\usepackage{geometry}[margin=0.25in]
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{tocloft}
+\usepackage{float}
+\usepackage{empheq}
+\usepackage{paracol}
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+\renewcommand{\arraystretch}{1.5}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=black,
+    pdfpagemode=FullScreen,
+    pdfstartview=FitH,
+}
 
-\title{Deliverable 1: Documentation Outline}
-\author{Group \#}
-\date{Fall 2025}
+\tcbset{colframe=black, colback=white, boxrule=1pt, breakable}
 
 \begin{document}
+\pagenumbering{roman}
+\urlstyle{same}
+%Title page
 
-\maketitle
+\begin{titlepage}
+    \begin{center}
+        \vspace*{1cm}
+        \Huge
+        3K04 Deliverable 1: Documentation
+        \normalsize
+        \vfill
+    \end{center}
+ \end{titlepage}
+
+%------------------------------------------------------------%
+
 \newpage
-
 \tableofcontents
+
+%------------------------------------------------------------%
+
 \newpage
+\phantomsection
+\listoffigures
+\addcontentsline{toc}{section}{List of Figures}
 
+\phantomsection
+\listoftables
+\addcontentsline{toc}{section}{List of Tables}
+
+%------------------------------------------------------------%
+
+\newpage
 \section{Group Members}
-
-Add your names, MACIDs, student numbers.
+\begin{tabular}{|c|c|c|}
+    \hline
+    Name        & MacID         & Student Number    \\
+    \hline
+    Ryan Su     & sur21         & 400507973         \\
+    \hline
+    Cameron Lin & lin422        & 400535393         \\
+    \hline
+    Braden McEachern & mceacb1  & 400527617 \\
+    \hline
+    Damian Szydlowski & szydlowd & 400512629 \\
+    \hline
+\end{tabular}
 
 \section{Part 1}
 
