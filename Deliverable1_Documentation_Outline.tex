@@ -1,0 +1,88 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+
+\title{Deliverable 1: Documentation Outline}
+\author{Group \#}
+\date{Fall 2025}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Group Members}
+
+Add your names, MACIDs, student numbers.
+
+\section{Part 1}
+
+\subsection{Introduction}
+Briefly describe the purpose of the pacemaker system, the goals of this deliverable, and the scope of this part.
+
+\subsection{Requirements}
+\begin{itemize}
+    \item Overall system requirements (summarized from provided specification documents). It can be informal or semi-formal.
+    \item Mode-specific requirements: AOO, VOO, AAI, VVI.
+\end{itemize}
+
+\subsection{Design}
+
+In this section, you want to expand on the design decisions based on the requirements. You should be specific about your system design and how the various components relate together.
+
+\begin{itemize}
+    \item System architecture (major subsystems, hardware hiding, pin mapping).
+    \item Programmable parameters (rate limits, amplitudes, pulse widths, refractory periods, etc.).
+    \item Hardware inputs and outputs (signals sensed, signals controlled).
+    \item State machine design for each pacing mode (with diagrams if applicable). You can also use a tabular method.
+    \item Simulink diagram
+    \item Screenshots of your DCM, explaining its software structure
+\end{itemize}
+
+You should also be explicit on how your design decisions map directly to the requirements.
+
+\section{Part 2}
+
+\subsection{Requirements Potential Changes}
+Identify which requirements may evolve in the next deliverable (e.g., adding more modes, communication, new parameters).
+
+\subsection{Design Decision Potential Changes}
+List design choices that may need revisiting (e.g., choice of libraries, interface design, architecture).
+
+\subsection{Module Description}
+\begin{itemize}
+    \item Purpose of the component
+    \item Key functions/methods (public vs internal)
+    \item Global or state variables (if any)
+    \item Interactions with other components
+\end{itemize}
+
+\subsection{Testing}
+Document test cases for each module. Each test case should include:
+
+\begin{enumerate}
+    \item Purpose of the test
+    \item Input conditions
+    \item Expected output
+    \item Actual output
+    \item Result (Pass/Fail)
+\end{enumerate}
+
+For instance, on the DCM side, you should test registration and login, parameter input validation, and mode selection and data storage/retrieval. This is not a complete list, depending on your system, you will need to test other components.
+
+\subsection{GenAI Usage}
+Provide a summary of any usage of GenAI in developing the model, DCM or writing this section. If you did not use GenAI tools at all, state that.
+
+% ----------------------------------------------------
+\section{General Notes}
+\begin{itemize}
+    \item This is a general outline based on the Deliverable 1 handout. You should make sure everything listed in the handout it is included. 
+    \item Use screenshots of Simulink diagrams and DCM interface where appropriate.
+    \item Ensure the requirements are traceable to design and test cases.
+    \item Be concise and make things clear.
+    \item You can add other sections, and you can also decide not to use this structure, however, I am including the main general sections we will expect to see.
+\end{itemize}
+
+\end{document}
