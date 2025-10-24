@@ -6,7 +6,6 @@ from typing import Tuple
 _CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 USER_FILE = os.path.join(_CURRENT_DIR, "users.json")
 
-USER_FILE = "users.json"
 MAX_USERS = 10
 
 # ---------------- Storage helpers ----------------
@@ -49,7 +48,6 @@ class UserModel:
         if username in self.users:
             return False, "That username is already registered."
 
-        # Store the password directly in plaintext
         self.users[username] = password
         
         _save_users(self.users)

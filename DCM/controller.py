@@ -11,12 +11,18 @@ from views.main_view import MainFrame
 # We will create PacingModel later
 # from models.pacing_model import PacingModel 
 
+root = tk.Tk()
+width = int(root.winfo_screenwidth() / 2)
+height = int(root.winfo_screenheight() / 2)
+root.destroy()
+
+
 class DCMApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("DCM - Device Controller-Monitor")
-        self.geometry("420x320") # Start with login size
-        self.resizable(False, False)
+        self.geometry(str(width) + "x" + str(height)) # Start with login size
+        self.resizable(True, True)
 
         # --- Models ---
         self.user_model = UserModel()
@@ -47,12 +53,10 @@ class DCMApp(tk.Tk):
             frame.refresh_user_count()
         elif frame_name == "MainFrame":
             # Resize window for the main application
-            self.geometry("800x600") 
-            self.resizable(True, True)
+            pass
             
         elif frame_name in ("Login", "Register"):
-            self.geometry("420x320")
-            self.resizable(False, False)
+            pass
 
         frame.tkraise()
 
