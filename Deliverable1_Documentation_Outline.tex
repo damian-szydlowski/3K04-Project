@@ -10,6 +10,7 @@
 \usepackage{empheq}
 \usepackage{paracol}
 \usepackage{enumitem}
+\usepackage{multirow}
 \usepackage[most]{tcolorbox}
 \renewcommand{\arraystretch}{1.5}
 \hypersetup{
@@ -73,15 +74,67 @@
     \hline
 \end{tabular}
 
+\newpage
+\section{Abbreviations}
+\begin{enumerate}[label=]
+    \item \textbf{CCS} - Cardiac Conduction System
+    \item \textbf{DCM} - Device Controller-Monitor
+    \item \textbf{GPIO} - General Purpose Input Output
+    \item \textbf{GUI} - Graphical User Interface
+    \item \textbf{PWM} - Pulse Width Modulation
+\end{enumerate}
+
+\subsection{Bradycardia Operating Abbreviations}
+\begin{table}[H]
+    \begin{tabular}{|m{2cm}|m{2cm}|m{2cm}|m{2cm}|m{3cm}|}
+        \hline
+        \textbf{Category} & \textbf{Chambers Paced} & \textbf{Chambers Sensed} & \textbf{Response to Sensing} & \textbf{Rate Modulation} \\
+        \hline 
+        Letters     & O-None & O-None & O-None & R-Rate Modulation\\
+                    & A-Atrium & A-Atrium & T-Triggered & \\
+                    & V-Ventricle & V-Ventricle & I-Inhibited & \\
+                    & D-Dual & D-Dual & D-Tracked & \\
+        \hline
+    \end{tabular}
+    \caption{Bradycardia Operating Abbreviations}
+\end{table}
+\newpage
 \section{Part 1}
 
 \subsection{Introduction}
 Briefly describe the purpose of the pacemaker system, the goals of this deliverable, and the scope of this part.
+\vspace{0.5cm}\\
+It is hard to understate the importance the human heart. Being the core part of the cardiovascular system; supplying nutrients and oxygen to all the cells
+and removing carbon dioxide, especially to vital organs such as the brain, it is imperative for it to be working flawlessly and harmoniously at all times.
+Unfortunately, however, cardiovascular diseases are a leading cause of death globally, many of which are caused from complications with 
+abnormal heart rhythms. A pacemaker is an implantable device capable of sending timed electrical impulses causing contractions at 
+appropriate intervals. Understanding the operation and design of this life saving device will aid in developing 
+more efficient and reliable cardiac assistive technology. 
+
+The purpose of this project is to design and implement a system that operates a cardiac pacemaker 
+under specified modes. This will be accomplished through an understanding embedded systems and through engineering 
+principles of software development. 
+
+The scope of this deliverable is to design and implement the imbedded pacemaker software, driver software and user interface for 
+the DCM while updating and maintaining documentation. 
+
+
 
 \subsection{Requirements}
+
 \begin{itemize}
     \item Overall system requirements (summarized from provided specification documents). It can be informal or semi-formal.
     \item Mode-specific requirements: AOO, VOO, AAI, VVI.
+\end{itemize}
+
+\subsection{DCM Requirements}
+The user shall be capable of the following
+\begin{itemize}
+    \item utilizing and managing windows for display of text and graphics.
+    \item processing user positioning and input buttons.
+    \item displaying all programmable parameters for review and modification.
+    \item visually indicating when telemetry is lost due to the device being out of range or noise.
+    \item indicating when a different PACEMAKER device is approached than was previously interrogated
 \end{itemize}
 
 \subsection{Design}
