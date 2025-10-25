@@ -1,4 +1,3 @@
-# views/login_views.py
 import tkinter as tk
 
 class Welcome(tk.Frame):
@@ -42,15 +41,12 @@ class Register(tk.Frame):
         tk.Button(btns, text="Back", width=14, command=lambda: controller.show_frame("Welcome")).grid(row=0, column=1, padx=6)
 
     def _do_register(self):
-        # Get the values first
         username = self.name_entry.get()
         password = self.pass_entry.get()
         
-        # --- FIX: Clear the fields BEFORE calling the controller ---
         self.name_entry.delete(0, 'end')
         self.pass_entry.delete(0, 'end')
 
-        # Now pass the data to the controller
         self.controller.handle_register(username, password)
 
 
@@ -77,13 +73,10 @@ class Login(tk.Frame):
         tk.Button(btns, text="Back", width=14, command=lambda: controller.show_frame("Welcome")).grid(row=0, column=1, padx=6)
 
     def _do_login(self):
-        # Get the values first
         username = self.name_entry.get()
         password = self.pass_entry.get()
 
-        # --- FIX: Clear the fields BEFORE calling the controller ---
         self.name_entry.delete(0, 'end')
         self.pass_entry.delete(0, 'end')
 
-        # Now pass the data to the controller
         self.controller.handle_login(username, password)

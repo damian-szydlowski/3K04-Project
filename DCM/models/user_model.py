@@ -1,4 +1,3 @@
-# models/user_model.py
 import json
 import os
 from typing import Tuple
@@ -8,7 +7,6 @@ USER_FILE = os.path.join(_CURRENT_DIR, "users.json")
 
 MAX_USERS = 10
 
-# ---------------- Storage helpers ----------------
 def _load_users() -> dict:
     """Loads the user dictionary from the JSON file."""
     if not os.path.exists(USER_FILE):
@@ -24,10 +22,9 @@ def _save_users(users: dict) -> None:
     with open(USER_FILE, "w") as f:
         json.dump(users, f, indent=2)
 
-# ---------------- Model Class ----------------
 class UserModel:
     def __init__(self):
-        # The dictionary now stores: username -> password
+        # The dictionary stores: username -> password
         self.users = _load_users()  
 
     def get_user_count(self) -> int:
