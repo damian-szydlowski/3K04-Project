@@ -34,6 +34,9 @@
         \vspace*{1cm}
         \Huge
         3K04 Deliverable 1: Documentation
+        \vspace{1cm}\\
+        \huge
+        Group 33
         \normalsize
         \vfill
         Last Updated: 2025-09-26
@@ -58,6 +61,8 @@
 
 %------------------------------------------------------------%
 
+\clearpage
+\pagenumbering{arabic}
 \newpage
 \section{Group Members}
 \begin{tabular}{|c|c|c|}
@@ -104,9 +109,8 @@
 \section{Part 1}
 
 \subsection{Introduction}
-\textit{Briefly describe the purpose of the pacemaker system, the goals of this deliverable, and the scope of this part.}
-\vspace{0.5cm}\\
-It is hard to understate the importance the human heart. Being the core part of the cardiovascular system; supplying nutrients and oxygen to all the cells
+
+It is hard to understate the importance of the human heart. The heart is the core part of the cardiovascular system; supplying nutrients and oxygen to all the cells
 and removing carbon dioxide, especially to vital organs such as the brain, it is imperative for it to be working flawlessly and harmoniously at all times.
 Unfortunately, however, cardiovascular diseases are a leading cause of death globally, many of which are caused from complications with 
 abnormal heart rhythms. A pacemaker is an implantable device capable of sending timed electrical impulses causing contractions at 
@@ -114,10 +118,10 @@ appropriate intervals. Understanding the operation and design of this life savin
 more efficient and reliable cardiac assistive technology. 
 
 The purpose of this project is to design and implement a system that operates a cardiac pacemaker 
-under specified modes. This will be accomplished through an understanding embedded systems and through engineering 
+under specified modes. This project will be accomplished through an understanding of embedded systems and through engineering 
 principles of software development. 
 
-The scope of this deliverable is to design and implement the imbedded pacemaker software, driver software and user interface for 
+The scope of this deliverable is to design and implement the embedded pacemaker software, driver software and user interface for 
 the DCM while updating and maintaining documentation. 
 
 
@@ -153,6 +157,127 @@ In this section, you want to expand on the design decisions based on the require
 \end{itemize}
 
 You should also be explicit on how your design decisions map directly to the requirements.
+
+\newpage
+\subsection{Simulink Design}
+
+\subsubsection{Overall Design}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{SimWholeView.png}
+        \caption{Overall Simulink Mapping}
+        \label{SimWholeView}
+    \end{figure}
+\end{tcolorbox}
+The Pacemaker architecure can be split up into 4 main modules, input constant variables, 
+input monitor variables, stateflow logic for modes, and hardware hiding. \hyperref[SimWholeView]{Figure 1} below shows the overarcing 
+workflow of the system:
+
+\newpage
+\subsubsection{Input Constant Variables}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{ConstIn.png}
+        \caption{Constant Input Variables}
+        \label{ConstIn}
+    \end{figure}
+\end{tcolorbox}
+In the above image, \hyperref[ConstIn]{Figure 2}, we find changeable variables 
+relating to pacemaker operation. For general inputs, the changeable variables are:
+
+\begin{itemize}
+    \item \textbf{Mode} - Refers to bradycardia operating modes, e.g AOO, VOO, AAI and VVI.
+    \item \textbf{Low Rate Interval} - The number of generated pace pulses per minute.
+    \item \textbf{Hysteresis Pace} - When enabled, a longer period is waited before pacing after sensing an event.
+    \item Hysteresis Interval 
+\end{itemize}
+The modfiable atrial variables are:
+
+\begin{itemize}
+    \item Pace Width
+    \item Pace Amplitude
+    \item ARP 
+    \item Sense
+\end{itemize}
+The modifiable ventricular variables are:
+
+\begin{itemize}
+    \item Pace Width
+    \item Pace Amplitude
+    \item VRP
+    \item Sense
+\end{itemize}
+
+\newpage
+\subsubsection{Monitored Input Variables}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{InMon.png}
+        \caption{Monitored Input Variables}
+        \label{InMon}
+    \end{figure}
+\end{tcolorbox}
+The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3}.
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{StateMod.png}
+        \caption{Stateflow Modules}
+        \label{StateMod}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{AOO.png}
+        \caption{AOO Stateflow Model}
+        \label{AOOSF}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{VOO.png}
+        \caption{VOO Stateflow Model}
+        \label{VOOSF}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{VVI.png}
+        \caption{VII Stateflow Model}
+        \label{VIISF}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{AAI.png}
+        \caption{AAI Stateflow Model}
+        \label{AAISF}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{VVI.png}
+        \caption{VVI Stateflow Model}
+        \label{VVISF}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{HardwareHiding.png}
+        \caption{Hardware Hiding of Model}
+        \label{HardHide}
+    \end{figure}
+\end{tcolorbox}
+
 
 \section{Part 2}
 
