@@ -1,35 +1,81 @@
 import customtkinter as ctk
 
-# This class is the first screen the user sees.
+# This class is the main login screen, split in two.
 class Welcome(ctk.CTkFrame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
 
-        # This frame will hold all our content and we'll center it
-        content_frame = ctk.CTkFrame(self, fg_color="transparent")
+        # Set up a two-column grid that splits the screen 50/50
+        self.grid_columnconfigure(0, weight=1, uniform="split") # Left half
+        self.grid_columnconfigure(1, weight=1, uniform="split") # Right half
+        self.grid_rowconfigure(0, weight=1)
         
-        # Just a simple title font
-        title_font = ctk.CTkFont(family="Helvetica", size=18, weight="bold")
+        # This is the left side with the "Welcome Back!" text
+        left_frame = ctk.CTkFrame(self, fg_color="transparent")
+        left_frame.grid(row=0, column=0, sticky="nsew")
         
-        # Make sure all widgets are inside the content_frame
-        ctk.CTkLabel(content_frame, text="Welcome to DCM", font=title_font).pack(pady=24)
-        
-        self.count_var = ctk.StringVar(value="Users stored: 0 of 10")
-        ctk.CTkLabel(content_frame, textvariable=self.count_var).pack(pady=4)
+        # We put the text in a label and center it
+        welcome_font = ctk.CTkFont(family="Helvetica", size=48, weight="bold")
+        welcome_label = ctk.CTkLabel(left_frame, text="Welcome\nto DCM!", font=welcome_font)
+        welcome_label.place(relx=0.5, rely=0.5, anchor="center")
 
-        ctk.CTkButton(content_frame, text="Login", width=140, command=lambda: controller.show_frame("Login")).pack(pady=8)
-        ctk.CTkButton(content_frame, text="Register", width=140, command=lambda: controller.show_frame("Register")).pack(pady=4)
-        ctk.CTkButton(content_frame, text="Exit", width=140, command=controller.destroy).pack(pady=18)
+        # This is the right side with the login form
+        # It gets the default lighter background color
+        right_frame = ctk.CTkFrame(self)
+        right_frame.grid(row=0, column=1, sticky="nsew")
 
-        # This is the magic line that centers the content
+        # This frame holds all the login widgets
+        # It's transparent so it shows the right_frame's color
+        content_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
         content_frame.place(relx=0.5, rely=0.5, anchor="center")
 
+        title_font = ctk.CTkFont(family="Helvetica", size=18, weight="bold")
+        ctk.CTkLabel(content_frame, text="Login", font=title_font).pack(pady=16)
+
+        # A frame for the entry boxes
+        form = ctk.CTkFrame(content_frame, fg_color="transparent")
+        form.pack(pady=8)
+        
+        ctk.CTkLabel(form, text="Name").grid(row=0, column=0, sticky="e", padx=6, pady=6)
+        ctk.CTkLabel(form, text="Password").grid(row=1, column=0, sticky="e", padx=6, pady=6)
+
+        self.name_entry = ctk.CTkEntry(form, width=200)
+        self.pass_entry = ctk.CTkEntry(form, width=200, show="*")
+        self.name_entry.grid(row=0, column=1, padx=6, pady=6)
+        self.pass_entry.grid(row=1, column=1, padx=6, pady=6)
+
+        # A frame for the buttons
+        btns = ctk.CTkFrame(content_frame, fg_color="transparent")
+        btns.pack(pady=10)
+        
+        ctk.CTkButton(btns, text="Login", width=100, command=self._do_login).grid(row=0, column=0, padx=6)
+        
+        # This button switches to the Register screen
+        ctk.CTkButton(btns, text="Register", width=100, command=lambda: controller.show_frame("Register")).grid(row=0, column=1, padx=6)
+
+        # This label shows the user count
+        self.count_var = ctk.StringVar(value="Users stored: 0 of 10")
+        ctk.CTkLabel(content_frame, textvariable=self.count_var).pack(pady=20)
+
+    def _do_login(self):
+        # This runs when the 'Login' button is clicked
+        username = self.name_entry.get()
+        password = self.pass_entry.get()
+
+        # Clear the fields first to prevent flickering
+        self.name_entry.delete(0, 'end')
+        self.pass_entry.delete(0, 'end')
+
+        # Send the info to the controller to check it
+        self.controller.handle_login(username, password)
+
     def refresh_user_count(self):
-        # Asks the controller for the current user count and updates the label
+        # This updates the user count label
         count = self.controller.get_user_count()
         max_users = self.controller.get_max_users()
         self.count_var.set(f"Users stored: {count} of {max_users}")
+
 
 # This class is the new user registration screen.
 class Register(ctk.CTkFrame):
@@ -37,15 +83,32 @@ class Register(ctk.CTkFrame):
         super().__init__(parent)
         self.controller = controller
 
-        # This frame will hold all our content and we'll center it
-        content_frame = ctk.CTkFrame(self, fg_color="transparent")
+        # Set up the same two-column grid
+        self.grid_columnconfigure(0, weight=1, uniform="split")
+        self.grid_columnconfigure(1, weight=1, uniform="split")
+        self.grid_rowconfigure(0, weight=1)
+
+        # This is the left side with the "Create Account" text
+        left_frame = ctk.CTkFrame(self, fg_color="transparent")
+        left_frame.grid(row=0, column=0, sticky="nsew")
+        
+        # Put the text in a label and center it
+        welcome_font = ctk.CTkFont(family="Helvetica", size=48, weight="bold")
+        welcome_label = ctk.CTkLabel(left_frame, text="Create\nAccount", font=welcome_font)
+        welcome_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        # This is the right side with the registration form
+        right_frame = ctk.CTkFrame(self)
+        right_frame.grid(row=0, column=1, sticky="nsew")
+        
+        # This frame holds the register form and is centered
+        content_frame = ctk.CTkFrame(right_frame, fg_color="transparent")
+        content_frame.place(relx=0.5, rely=0.5, anchor="center")
 
         title_font = ctk.CTkFont(family="Helvetica", size=16, weight="bold")
-        # Put the title in the content_frame
         ctk.CTkLabel(content_frame, text="Register New User", font=title_font).pack(pady=16)
 
-        # We put the labels and entry boxes in their own frame
-        # This frame also goes inside the content_frame
+        # A frame for the entry boxes
         form = ctk.CTkFrame(content_frame, fg_color="transparent")
         form.pack(pady=8)
         
@@ -57,70 +120,23 @@ class Register(ctk.CTkFrame):
         self.name_entry.grid(row=0, column=1, padx=6, pady=6)
         self.pass_entry.grid(row=1, column=1, padx=6, pady=6)
 
-        # We put the buttons in their own frame
-        # This frame also goes inside the content_frame
+        # A frame for the buttons
         btns = ctk.CTkFrame(content_frame, fg_color="transparent")
         btns.pack(pady=10)
         
         ctk.CTkButton(btns, text="Register", width=100, command=self._do_register).grid(row=0, column=0, padx=6)
+        
+        # This button goes back to the "Welcome" (login) screen
         ctk.CTkButton(btns, text="Back", width=100, command=lambda: controller.show_frame("Welcome")).grid(row=0, column=1, padx=6)
-
-        # This is the magic line that centers the content
-        content_frame.place(relx=0.5, rely=0.5, anchor="center")
 
     def _do_register(self):
-        # This function runs when the 'Register' button is clicked
+        # This runs when the 'Register' button is clicked
         username = self.name_entry.get()
         password = self.pass_entry.get()
         
+        # Clear the fields first
         self.name_entry.delete(0, 'end')
         self.pass_entry.delete(0, 'end')
 
+        # Send the info to the controller to save it
         self.controller.handle_register(username, password)
-
-# This class is the existing user login screen.
-class Login(ctk.CTkFrame):
-    def __init__(self, parent, controller):
-        super().__init__(parent)
-        self.controller = controller
-
-        # This frame will hold all our content and we'll center it
-        content_frame = ctk.CTkFrame(self, fg_color="transparent")
-
-        title_font = ctk.CTkFont(family="Helvetica", size=16, weight="bold")
-        # Put the title in the content_frame
-        ctk.CTkLabel(content_frame, text="Login", font=title_font).pack(pady=16)
-
-        # Frame for the entry boxes
-        # This frame also goes inside the content_frame
-        form = ctk.CTkFrame(content_frame, fg_color="transparent")
-        form.pack(pady=8)
-        
-        ctk.CTkLabel(form, text="Name").grid(row=0, column=0, sticky="e", padx=6, pady=6)
-        ctk.CTkLabel(form, text="Password").grid(row=1, column=0, sticky="e", padx=6, pady=6)
-
-        self.name_entry = ctk.CTkEntry(form, width=200)
-        self.pass_entry = ctk.CTkEntry(form, width=200, show="*")
-        self.name_entry.grid(row=0, column=1, padx=6, pady=6)
-        self.pass_entry.grid(row=1, column=1, padx=6, pady=6)
-
-        # Frame for the buttons
-        # This frame also goes inside the content_frame
-        btns = ctk.CTkFrame(content_frame, fg_color="transparent")
-        btns.pack(pady=10)
-        
-        ctk.CTkButton(btns, text="Login", width=100, command=self._do_login).grid(row=0, column=0, padx=6)
-        ctk.CTkButton(btns, text="Back", width=100, command=lambda: controller.show_frame("Welcome")).grid(row=0, column=1, padx=6)
-
-        # This is the magic line that centers the content
-        content_frame.place(relx=0.5, rely=0.5, anchor="center")
-
-    def _do_login(self):
-        # This function runs when the 'Login' button is clicked
-        username = self.name_entry.get()
-        password = self.pass_entry.get()
-
-        self.name_entry.delete(0, 'end')
-        self.pass_entry.delete(0, 'end')
-
-        self.controller.handle_login(username, password)

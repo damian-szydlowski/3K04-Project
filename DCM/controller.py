@@ -7,11 +7,12 @@ from models.user_model import UserModel, MAX_USERS
 from models.pacing_model import PacingModel 
 
 # Get our screen/view classes
-from views.login_views import Welcome, Register, Login
+# We only import Welcome and Register now
+from views.login_views import Welcome, Register
 from views.main_view import MainFrame, DataEntry
 
 # Set the overall look of the app
-ctk.set_appearance_mode("System") # Can be "System", "Light", or "Dark"
+ctk.set_appearance_mode("System") 
 ctk.set_default_color_theme("blue") 
 
 class DCMApp(ctk.CTk):
@@ -19,19 +20,13 @@ class DCMApp(ctk.CTk):
         super().__init__()
         self.title("DCM - Device Controller-Monitor")
 
-        # Let's make the window half the screen size
+        # Set up window size and position
         window_width = int(self.winfo_screenwidth() * 0.5)
         window_height = int(self.winfo_screenheight() * 0.5)
-
-        # Find out how big the monitor is
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
-
-        # Figure out the x/y coords to center the window
         pos_x = (screen_width // 2) - (window_width // 2)
         pos_y = (screen_height // 2) - (window_height // 2)
-
-        # Set the window's size and position
         self.geometry(f"{window_width}x{window_height}+{pos_x}+{pos_y}")
         
         self.resizable(True, True)
@@ -50,12 +45,13 @@ class DCMApp(ctk.CTk):
         # Create all the screens (frames) for the app
         self.frames = {}
         
-        # We give each frame a way to talk back to this controller
-        for F in (Welcome, Register, Login, MainFrame, DataEntry):
+        # We REMOVED "Login" from this list
+        for F in (Welcome, Register, MainFrame, DataEntry):
             frame = F(parent=self.container, controller=self)
             self.frames[F.__name__] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
+        # The app now starts on the "Welcome" screen, which is our new login page
         self.show_frame("Welcome")
 
     def show_frame(self, frame_name: str):
@@ -67,9 +63,10 @@ class DCMApp(ctk.CTk):
             frame.refresh_user_count()
 
         frame.tkraise()
-
-    # These are the functions our screens can call
     
+    # ... all your other methods (handle_register, handle_login, etc.) ...
+    # ... stay exactly the same. ...
+
     def handle_register(self, username: str, password: str):
         # This runs when the register button is clicked
         success, message = self.user_model.register_user(username, password)
@@ -97,6 +94,7 @@ class DCMApp(ctk.CTk):
         self.current_user = None # Forget who was logged in
         self.frames["MainFrame"].set_user("") 
         self.frames["DataEntry"].set_user("")
+        # Go back to the Welcome/Login screen
         self.show_frame("Welcome")
 
     def get_user_count(self) -> int:

@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from tkinter import messagebox  
 from typing import Dict 
 
 # This map tells us which parameters are active for each pacing mode
@@ -8,6 +9,19 @@ PARAMETER_MAP = {
     "AAI": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width", "ARP"],
     "VVI": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width", "VRP"],
 }
+
+# Validation rules
+PARAMETER_VALIDATION_RULES = {
+    "Lower Rate Limit": (30, 175, int),
+    "Upper Rate Limit": (50, 175, int),
+    "Atrial Amplitude": (0.5, 7.0, float),
+    "Atrial Pulse Width": (0.05, 1.9, float),
+    "Ventricular Amplitude": (0.5, 7.0, float),
+    "Ventricular Pulse Width": (0.05, 1.9, float),
+    "VRP": (150, 500, int),
+    "ARP": (150, 500, int),
+}
+
 
 # This is the screen for entering and editing pacing parameters.
 class DataEntry(ctk.CTkFrame):
@@ -27,8 +41,6 @@ class DataEntry(ctk.CTkFrame):
         
         user_label = ctk.CTkLabel(top_bar, textvariable=self.user_var, font=ctk.CTkFont(family="Helvetica", size=12), fg_color="transparent")
         user_label.pack(side="left", padx=10)
-
-        # We removed the logout button from here
 
         # This is the main content area below the top bar
         main_content = ctk.CTkFrame(self, fg_color="transparent")
@@ -52,7 +64,21 @@ class DataEntry(ctk.CTkFrame):
 
         # Let's create all the labels and entry boxes in a loop
         for i, param_name in enumerate(param_list):
-            label = ctk.CTkLabel(controls_frame, text=f"{param_name}:")
+            
+            # --- THIS IS THE MODIFIED PART ---
+            # Get the rule for this parameter
+            rule = PARAMETER_VALIDATION_RULES.get(param_name)
+            label_text = f"{param_name}:" # Start with the base text
+            
+            if rule:
+                # If a rule exists, add the (min-max) range to the text
+                min_val, max_val, _ = rule
+                label_text = f"{param_name}: ({min_val} - {max_val})"
+            
+            # Create the label with the new text
+            label = ctk.CTkLabel(controls_frame, text=label_text)
+            # --- END OF MODIFICATION ---
+            
             label.grid(row=i, column=0, sticky="e", padx=5, pady=5)
             
             entry = ctk.CTkEntry(controls_frame, width=200)
@@ -68,12 +94,11 @@ class DataEntry(ctk.CTkFrame):
         Back_Button = ctk.CTkButton(bottom_frame, text="Back to Mode Selection", width=180, command=lambda: controller.show_frame("MainFrame"))
         Back_Button.pack(side="left", padx=10)
         
-        # We put the logout button on the right side of the bottom frame
         logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
         logout_btn.pack(side="right", padx=10)
         
         Save_Button = ctk.CTkButton(bottom_frame, text="Save Parameters", width=180, command=self._do_save)
-        Save_Button.pack(side="right", padx=10) # It's packed before logout, so it's to its left
+        Save_Button.pack(side="right", padx=10) 
 
     def set_pacing_mode(self, mode: str, settings: Dict[str, str]):
         # This function is called by the controller to set up the page
@@ -107,10 +132,50 @@ class DataEntry(ctk.CTkFrame):
         # Go through all widgets and get the text from the ones that are enabled
         for param_name, (label, entry) in self.param_widgets.items():
             if entry.cget("state") != "disabled":
-                data_to_save[param_name] = entry.get()
+                value_str = entry.get()
+                
+                if not self._validate_entry(param_name, value_str):
+                    return # Stop the save if validation fails
+                
+                data_to_save[param_name] = value_str
         
-        # Send the data to the controller to save
+        # If all validations passed, send the data to the controller
         self.controller.handle_save_settings(self.current_mode, data_to_save)
+
+    def _validate_entry(self, name: str, value_str: str) -> bool:
+        """Checks if a single value is valid for its parameter."""
+        rule = PARAMETER_VALIDATION_RULES.get(name)
+        if not rule:
+            return True # No rule, so it's fine
+
+        min_val, max_val, data_type = rule
+        
+        try:
+            value = data_type(value_str)
+        except ValueError:
+            messagebox.showerror("Invalid Input", 
+                                 f"Error in '{name}':\n\n"
+                                 f"Value must be a number.")
+            return False
+
+        if not (min_val <= value <= max_val):
+            messagebox.showerror("Invalid Input", 
+                                 f"Error in '{name}':\n\n"
+                                 f"Value must be between {min_val} and {max_val}.")
+            return False
+        
+        if name == "Upper Rate Limit":
+            try:
+                lrl_entry = self.param_widgets["Lower Rate Limit"][1]
+                lrl_val = int(lrl_entry.get())
+                if value < lrl_val:
+                    messagebox.showerror("Invalid Input", 
+                                         "Error: 'Upper Rate Limit' cannot be less than 'Lower Rate Limit'.")
+                    return False
+            except Exception:
+                pass 
+        
+        return True # All checks passed
 
     def set_user(self, username: str):
         # Updates the user label in the top bar
@@ -138,8 +203,6 @@ class MainFrame(ctk.CTkFrame):
         
         user_label = ctk.CTkLabel(top_bar, textvariable=self.user_var, font=ctk.CTkFont(family="Helvetica", size=12), fg_color="transparent")
         user_label.pack(side="left", padx=10)
-
-        # We removed the logout button from here
 
         # The main part of the screen
         main_content = ctk.CTkFrame(self, fg_color="transparent")
