@@ -12,6 +12,37 @@
 \usepackage{enumitem}
 \usepackage{multirow}
 \usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+
+\titleclass{\subsubsubsection}{straight}[\subsection]
+
+\newcounter{subsubsubsection}[subsubsection]
+\renewcommand\thesubsubsubsection{\thesubsubsection.\arabic{subsubsubsection}}
+\renewcommand\theparagraph{\thesubsubsubsection.\arabic{paragraph}}
+\titleformat{\subsubsubsection}
+  {\normalfont\normalsize\bfseries}{\thesubsubsubsection}{1em}{}
+\titlespacing*{\subsubsubsection}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\makeatletter
+\renewcommand\paragraph{\@startsection{paragraph}{5}{\z@}%
+  {3.25ex \@plus1ex \@minus.2ex}%
+  {-1em}%
+  {\normalfont\normalsize\bfseries}}
+\renewcommand\subparagraph{\@startsection{subparagraph}{6}{\parindent}%
+  {3.25ex \@plus1ex \@minus .2ex}%
+  {-1em}%
+  {\normalfont\normalsize\bfseries}}
+\def\toclevel@subsubsubsection{4}
+\def\toclevel@paragraph{5}
+\def\l@subsubsubsection{\@dottedtocline{4}{7em}{4em}}
+\def\l@paragraph{\@dottedtocline{5}{10em}{5em}}
+
+\makeatother
+
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{5}
+
 \renewcommand{\arraystretch}{1.5}
 \hypersetup{
     colorlinks=true,
@@ -84,6 +115,7 @@
 \newpage
 \section{Abbreviations}
 \begin{enumerate}[label=]
+    \item \textbf{BPM} - Beats Per Minute
     \item \textbf{CCS} - Cardiac Conduction System
     \item \textbf{DCM} - Device Controller-Monitor
     \item \textbf{GPIO} - General Purpose Input Output
@@ -338,107 +370,250 @@ Document test cases for each module. Each test case should include:
     \item Result (Pass/Fail)
 \end{enumerate}
 
+\subsubsection{SimuLink Mode Testing}
+
+\subsubsubsection{Testing of AOO}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic AOO functionality.
+   \item \textbf{Input Conditions:} General inputs of mode = 0, AOO, and hysteresis = 0, off, and standard 
+   atrial inputs. 
+   \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heart beats.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[AOOtest]{Figure 10}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]        
+        \label{AOOtest}
         \includegraphics[width=\textwidth]{AOOtest1.png}
         \caption{AOO Test}
-        \label{AOOtest}
     \end{figure}
 \end{tcolorbox}
 
+\hyperref[AOOpulse]{Figure 11} below shows a zoomed in view of one of the pulses in the AOO test above, \hyperref[AOOtest]{Figure 11}. 
+
 \begin{tcolorbox}
     \begin{figure}[H]
+        \label{AOOpulse}
         \includegraphics[width=\textwidth]{AOOPulseClose.png}
         \caption{Close-up of AOO Pulse}
-        \label{AOOpulse}
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\subsubsubsection{Testing of VOO}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic VOO functionality.
+   \item \textbf{Input Conditions:} General inputs of mode = 1, VOO, and hysteresis = 0, off, and standard 
+   ventricle inputs. 
+   \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heart beats.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[VOOtest]{Figure 12}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
     \begin{figure}[H]
+        \label{VOOtest}
         \includegraphics[width=\textwidth]{VOOtest.png}
         \caption{VOO Test}
-        \label{VOOpulse}
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\hyperref[VOOpulseclose]{Figure 13} below shows a zoomed in view of one of the pulses in the VOO test above, \hyperref[VOOtest]{Figure 12}
+
 \begin{tcolorbox}
     \begin{figure}[H]
+        \label{VOOpulseclose}
         \includegraphics[width=\textwidth]{VOOpulseclose.png}
         \caption{Close-up of VOO Pulse}
-        \label{VOOpulse}
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\subsubsubsection{Testing of AAI}
+
+\paragraph{No Natural Heart Rate}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic AAI functionality with no natural heart rhythms.
+   \item \textbf{Input Conditions:} General inputs of mode = 2, AAI, and hysteresis = 0, off, and standard 
+   artial inputs. 
+   \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[AAItestnohr]{Figure 13}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
     \begin{figure}[H]
+        \label{AAItestnohr}
         \includegraphics[width=\textwidth]{AAItestnohr.png}
         \caption{AAI Test No Heart Rate}
-        \label{AAItestnohr}
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\paragraph{Natural Heart Rate of 45 BPM}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic AAI functionality at a low heart rate.
+   \item \textbf{Input Conditions:} General inputs of mode = 2, AAI, and hysteresis = 0, off, standard 
+   artial inputs, and monitored atrial pulses at 45 BPM.
+   \item \textbf{Expected Output:} The pacemaker should pulse after the refactory period expires. An output of blue pulses right before the natural 
+   red pulses is expected.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[AAItest45]{Figure 15}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
+
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{AAItest45}
         \includegraphics[width=\textwidth]{AAItest45.png}
-        \caption{AAI Test 45 BPM}
-        \label{AAItest45}
+        \caption{AAI Test 45 BPM}      
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\paragraph{Natural Heart Rate of 75 BPM}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic AAI functionality at a nominal heart rate.
+   \item \textbf{Input Conditions:} General inputs of mode = 2, AAI, and hysteresis = 0, off, standard 
+   artial inputs, and monitored atrial pulses at 75 BPM.
+   \item \textbf{Expected Output:} As a nominal heart reate is being inputted, the pacemaker should not be delivering pacing pulses 
+   as the simulated heart rate is nominal and healthy.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[AAItest75]{Figure 16}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{AAItest75}
         \includegraphics[width=\textwidth]{AAItest75.png}
         \caption{AAI Test 75 BPM}
-        \label{AAItest75}
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\subsubsubsection{Testing of VVI}
+
+\paragraph{No Natural Heart Rate}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic VVI functionality with no inputted heart rate.
+   \item \textbf{Input Conditions:} General inputs of mode = 3, VVI, and hysteresis = 0, off, standard ventricle 
+   inputs, and monitored ventricle pulses.
+   \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[VVItestnor]{Figure 17}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{VVItestnor}
         \includegraphics[width=\textwidth]{VVItestnohr.png}
         \caption{VVI Test No Heart Rate}
-        \label{VVItestnor}
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\paragraph{Natural Heart Rate at 45 BPM}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic VVI functionality with no inputted heart rate.
+   \item \textbf{Input Conditions:} General inputs of mode = 3, VVI, and hysteresis = 0, off, standard ventricle 
+   inputs, and monitored ventricle pulses.
+   \item \textbf{Expected Output:} The pacemaker should pulse after the refactory period expires. An output of blue pulses right before the natural 
+   red pulses is expected.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[VVItest45]{Figure 18}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{VVItest45}
         \includegraphics[width=\textwidth]{VVItest35.png}
         \caption{VVI Test 45 BPM}
-        \label{VVItest45}
+        
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\paragraph{Natural Heart Rate at 75 BPM}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic VVI functionality with no inputted heart rate.
+   \item \textbf{Input Conditions:} General inputs of mode = 3, VVI, and hysteresis = 0, off, standard ventricle 
+   inputs, and monitored ventricle pulses.
+   \item \textbf{Expected Output:} As a nominal heart reate is being inputted, the pacemaker should not be delivering pacing pulses 
+   as the simulated heart rate is nominal and healthy.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[VVItest45]{Figure 18}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{VVItest75}
         \includegraphics[width=\textwidth]{VVItest75.png}
         \caption{VVI Test 75 BPM}
-        \label{VVItest75}
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\subsubsubsection{Hysteresis Testing}
+
+\paragraph{Hysteresis Test 1 (60 BPM)}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic hysteresis mode functionality.
+   \item \textbf{Input Conditions:} General inputs of mode = 2, AAI, and hysteresis = 1, on, standard atrium 
+   inputs, and monitored atrial pulses at 50 BPM.
+   \item \textbf{Expected Output:} No output of the pacemaker.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[Hystest1]{Figure 20}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{Hystest1}
         \includegraphics[width=\textwidth]{hystherisistest.png}
-        \caption{Hysterisis Test 2}
-        \label{Hystest1}
+        \caption{Hysterisis Test 1}
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\paragraph{Hysteresis Test 2 (50 BPM)}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic hysteresis mode functionality.
+   \item \textbf{Input Conditions:} General inputs of mode = 2, AAI, and hysteresis = 1, on, standard atrium 
+   inputs, and monitored atrial pulses at 50 BPM.
+   \item \textbf{Expected Output:} No output of the pacemaker.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[Hystest2]{Figure 21}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{Hystest2}
         \includegraphics[width=\textwidth]{hythersistest2.png}
         \caption{Hysterisis Test 2}
-        \label{Hystest2}
     \end{figure}
 \end{tcolorbox}
 
+\newpage
+\paragraph{Hysteresis Test 3 (40 BPM)}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to test basic hysteresis mode functionality.
+   \item \textbf{Input Conditions:} General inputs of mode = 2, AAI, and hysteresis = 1, on, standard atrium 
+   inputs, and monitored atrial pulses at 50 BPM.
+   \item \textbf{Expected Output:} Delayed output signals from the pacemaker.
+   \item \textbf{Actual Output:} Output of testing is exactly that of expected, as shown below in \hyperref[Hystest3]{Figure 22}.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{Hystest3}
         \includegraphics[width=\textwidth]{hytheresistest3.png}
         \caption{Hysterisis Test 3}
-        \label{Hystest3}
+        
     \end{figure}
 \end{tcolorbox}
 
