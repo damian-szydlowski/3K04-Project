@@ -270,9 +270,12 @@ charging and discharging of the capacitor using specified nominal values.
         \label{VVISF}
     \end{figure}
 \end{tcolorbox}
-The above stateflow, \hyperref[VVISF]{Figure 7} shows the FSM for the VVI model. It detects a heartbeat produced by the simulating board 
-and will only produce pace pulses if the heart rate is low enough to pose danger. The pacemaker will then compensate the low heart rate 
-by pacing in a way to achieve nominal heart rhythms.  
+The above stateflow, \hyperref[VVISF]{Figure 7} shows the FSM for the VVI model. The initial state, pVRP, is the state 
+that occurs right after the pacemaker delivers a ventricle pacing pulse. A refactory period occurs during this time, where the 
+pacemaker ignores sensor inputs to prevent sensing of its own produced pulse or electrical ringing. After a certain amount of time,
+the pReady state is transitioned to where sensor inputs are allowed. This allows for the pacemaker to detect natural heart rhythms
+and correct heart rhythms accordingly, or solely deliver pacing pulses. The last state before going to the initial state is the 
+discharging state where the pacing pulse is produced. 
 
 \newpage
 \subsubsection{AAI Stateflow Model}
@@ -283,6 +286,13 @@ by pacing in a way to achieve nominal heart rhythms.
         \label{AAISF}
     \end{figure}
 \end{tcolorbox}
+The above stateflow, \hyperref[AAISF]{Figure 8} shows the process for the AAI mode. The initial state, pARP, is 
+the state occurs right after the pacemaker delivers an atrial pacing pulse. During this time, the pacemaker ignores 
+sensing events to prevent it from sensing its own delivered pulse. The next state is transitioned to after 
+a set time period, the refactory period, if no natural heartbeat is detected after a certain time inverval, the 
+discharging state is then transitioned to. However, if a natural heartbeat is detected, another refactory period occurs 
+to prevent the pacemaker from sensing ringing. This state then transitions to the discharging state once an appropriate time 
+has passed. 
 
 \newpage
 \subsubsection{Hardware Hiding}
@@ -327,6 +337,110 @@ Document test cases for each module. Each test case should include:
     \item Actual output
     \item Result (Pass/Fail)
 \end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{AOOtest1.png}
+        \caption{AOO Test}
+        \label{AOOtest}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{AOOPulseClose.png}
+        \caption{Close-up of AOO Pulse}
+        \label{AOOpulse}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{VOOtest.png}
+        \caption{VOO Test}
+        \label{VOOpulse}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{VOOpulseclose.png}
+        \caption{Close-up of VOO Pulse}
+        \label{VOOpulse}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{AAItestnohr.png}
+        \caption{AAI Test No Heart Rate}
+        \label{AAItestnohr}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{AAItest45.png}
+        \caption{AAI Test 45 BPM}
+        \label{AAItest45}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{AAItest75.png}
+        \caption{AAI Test 75 BPM}
+        \label{AAItest75}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{VVItestnohr.png}
+        \caption{VVI Test No Heart Rate}
+        \label{VVItestnor}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{VVItest35.png}
+        \caption{VVI Test 45 BPM}
+        \label{VVItest45}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{VVItest75.png}
+        \caption{VVI Test 75 BPM}
+        \label{VVItest75}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{hystherisistest.png}
+        \caption{Hysterisis Test 2}
+        \label{Hystest1}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{hythersistest2.png}
+        \caption{Hysterisis Test 2}
+        \label{Hystest2}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{hytheresistest3.png}
+        \caption{Hysterisis Test 3}
+        \label{Hystest3}
+    \end{figure}
+\end{tcolorbox}
 
 For instance, on the DCM side, you should test registration and login, parameter input validation, and mode selection and data storage/retrieval. This is not a complete list, depending on your system, you will need to test other components.
 
