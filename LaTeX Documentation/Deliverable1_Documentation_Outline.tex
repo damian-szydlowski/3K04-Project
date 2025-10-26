@@ -39,7 +39,7 @@
         Group 33
         \normalsize
         \vfill
-        Last Updated: 2025-09-26
+        Last Updated: 2025-10-25
     \end{center}
  \end{titlepage}
 
@@ -93,6 +93,7 @@
 
 \subsection{Bradycardia Operating Abbreviations}
 \begin{table}[H]
+    \caption{Bradycardia Operating Abbreviations}
     \begin{tabular}{|m{2cm}|m{2cm}|m{2cm}|m{2cm}|m{3cm}|}
         \hline
         \textbf{Category} & \textbf{Chambers Paced} & \textbf{Chambers Sensed} & \textbf{Response to Sensing} & \textbf{Rate Modulation} \\
@@ -103,7 +104,6 @@
                     & D-Dual & D-Dual & D-Tracked & \\
         \hline
     \end{tabular}
-    \caption{Bradycardia Operating Abbreviations}
 \end{table}
 \newpage
 \section{Part 1}
@@ -196,17 +196,19 @@ relating to pacemaker operation. For general inputs, the changeable variables ar
 The modfiable atrial variables are:
 
 \begin{itemize}
-    \item Pace Width
-    \item Pace Amplitude
-    \item ARP 
-    \item Sense
+    \item \textbf{Pace Pulse Width} - Changes the width of the pace pulse
+    \item \textbf{Pace Pulse Amplitude} - Changes the amplitude of the pace pulse
+    \item \textbf{ARP (Atrial Refactory Period)} - The programmed time interval following an atrial event during which time atrial
+            events shall not inhibit nor trigger pacing
+    \item \textbf{Sense} - 
 \end{itemize}
 The modifiable ventricular variables are:
 
 \begin{itemize}
-    \item Pace Width
-    \item Pace Amplitude
-    \item VRP
+    \item \textbf{Pace Pulse Width} - Changes the width of the pace pulse
+    \item \textbf{Pace Pulse Amplitude} - Changes the amplitude of the pace pulse
+    \item \textbf{VRP (Ventricle Refactory Period)} - The programmed time interval following an ventricle event during which time atrial
+            events shall not inhibit nor trigger pacing
     \item Sense
 \end{itemize}
 
@@ -220,8 +222,11 @@ The modifiable ventricular variables are:
         \label{InMon}
     \end{figure}
 \end{tcolorbox}
-The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3}.
+The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3}. These are the atrial and ventricle detection 
+variables. The pulses are sensed with through GPIO pins connecting to a board simulating heart conditions. 
 
+\newpage
+\subsubsection{Stateflow Modules}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{StateMod.png}
@@ -229,7 +234,11 @@ The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3
         \label{StateMod}
     \end{figure}
 \end{tcolorbox}
+The stateflow diagram in Simulink is shown above. It shows the transition between each mode given the mode input shown in 
+\hyperref[ConstIn]{Figure 2}. When switching between modes, a core state is returned to that resets variables to their nominal values. 
 
+\newpage
+\subsubsection{AOO Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{AOO.png}
@@ -237,7 +246,11 @@ The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3
         \label{AOOSF}
     \end{figure}
 \end{tcolorbox}
+The above stateflow, \hyperref[AOOSF]{Figure 5}, shows the stateflow for the AOO mode. It sets values 
+controlling discharge and charging of the capacitor to specified nominal values.
 
+\newpage
+\subsubsection{VOO Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{VOO.png}
@@ -245,15 +258,24 @@ The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3
         \label{VOOSF}
     \end{figure}
 \end{tcolorbox}
+Similar to the AOO stateflow, the above figure, \hyperref[VOOSF]{Figure 6}, shows the states of 
+charging and discharging of the capacitor using specified nominal values. 
 
+\newpage
+\subsubsection{VII Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{VVI.png}
-        \caption{VII Stateflow Model}
-        \label{VIISF}
+        \caption{VVI Stateflow Model}
+        \label{VVISF}
     \end{figure}
 \end{tcolorbox}
+The above stateflow, \hyperref[VVISF]{Figure 7} shows the FSM for the VVI model. It detects a heartbeat produced by the simulating board 
+and will only produce pace pulses if the heart rate is low enough to pose danger. The pacemaker will then compensate the low heart rate 
+by pacing in a way to achieve nominal heart rhythms.  
 
+\newpage
+\subsubsection{AAI Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{AAI.png}
@@ -262,13 +284,8 @@ The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3
     \end{figure}
 \end{tcolorbox}
 
-\begin{tcolorbox}
-    \begin{figure}[H]
-        \includegraphics[width=\textwidth]{VVI.png}
-        \caption{VVI Stateflow Model}
-        \label{VVISF}
-    \end{figure}
-\end{tcolorbox}
+\newpage
+\subsubsection{Hardware Hiding}
 
 \begin{tcolorbox}
     \begin{figure}[H]
@@ -277,6 +294,11 @@ The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3
         \label{HardHide}
     \end{figure}
 \end{tcolorbox}
+
+The above image, \hyperref[HardHide]{Figure 9} shows abstraction of the GPIO pin functions. 
+It connects logical output signals to the pins on the FRDM-K64F. This allows for better readability,
+thus making the code easier to maintain, debug and safer. 
+
 
 
 \section{Part 2}
