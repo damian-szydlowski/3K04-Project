@@ -70,7 +70,7 @@
         Group 33
         \normalsize
         \vfill
-        Last Updated: 2025-10-25
+        Last Updated: 2025-10-26
     \end{center}
  \end{titlepage}
 
@@ -114,6 +114,7 @@
 
 \newpage
 \section{Abbreviations}
+\subsection{General Abbreviations}
 \begin{enumerate}[label=]
     \item \textbf{BPM} - Beats Per Minute
     \item \textbf{CCS} - Cardiac Conduction System
@@ -175,7 +176,7 @@ The user shall be capable of the following:
     \item Vndicating when a different PACEMAKER device is approached than was previously interrogated
 \end{itemize}
 
-
+\newpage
 \subsection{Design}
 \label{dessec}
 In this section, you want to expand on the design decisions based on the requirements. You should be specific about your system design and how the various components relate together.
@@ -192,9 +193,9 @@ In this section, you want to expand on the design decisions based on the require
 You should also be explicit on how your design decisions map directly to the requirements.
 
 \newpage
-\subsection{Simulink Design}
+\subsubsection{Simulink Design}
 
-\subsubsection{Overall Design}
+\subsubsubsection{Overall Design}
 
 \begin{tcolorbox}
     \begin{figure}[H]
@@ -208,7 +209,7 @@ input monitor variables, stateflow logic for modes, and hardware hiding. \hyperr
 workflow of the system:
 
 \newpage
-\subsubsection{Input Constant Variables}
+\subsubsubsection{Input Constant Variables}
 
 \begin{tcolorbox}
     \begin{figure}[H]
@@ -246,7 +247,7 @@ The modifiable ventricular variables are:
 \end{itemize}
 
 \newpage
-\subsubsection{Monitored Input Variables}
+\subsubsubsection{Monitored Input Variables}
 
 \begin{tcolorbox}
     \begin{figure}[H]
@@ -259,7 +260,7 @@ The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3
 variables. The pulses are sensed with through GPIO pins connecting to a board simulating heart conditions. 
 
 \newpage
-\subsubsection{Stateflow Modules}
+\subsubsubsection{Stateflow Modules}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{StateMod.png}
@@ -271,7 +272,7 @@ The stateflow diagram in Simulink is shown above. It shows the transition betwee
 \hyperref[ConstIn]{Figure 2}. When switching between modes, a core state is returned to that resets variables to their nominal values. 
 
 \newpage
-\subsubsection{AOO Stateflow Model}
+\subsubsubsection{AOO Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{AOO.png}
@@ -283,7 +284,7 @@ The above stateflow, \hyperref[AOOSF]{Figure 5}, shows the stateflow for the AOO
 controlling discharge and charging of the capacitor to specified nominal values.
 
 \newpage
-\subsubsection{VOO Stateflow Model}
+\subsubsubsection{VOO Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{VOO.png}
@@ -295,7 +296,7 @@ Similar to the AOO stateflow, the above figure, \hyperref[VOOSF]{Figure 6}, show
 charging and discharging of the capacitor using specified nominal values. 
 
 \newpage
-\subsubsection{VII Stateflow Model}
+\subsubsubsection{VII Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{VVI.png}
@@ -311,7 +312,7 @@ and correct heart rhythms accordingly, or solely deliver pacing pulses. The last
 discharging state where the pacing pulse is produced. 
 
 \newpage
-\subsubsection{AAI Stateflow Model}
+\subsubsubsection{AAI Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{AAI.png}
@@ -328,7 +329,7 @@ to prevent the pacemaker from sensing ringing. This state then transitions to th
 has passed. 
 
 \newpage
-\subsubsection{Hardware Hiding}
+\subsubsubsection{Hardware Hiding}
 
 \begin{tcolorbox}
     \begin{figure}[H]
@@ -341,6 +342,9 @@ has passed.
 The above image, \hyperref[HardHide]{Figure 9} shows abstraction of the GPIO pin functions. 
 It connects logical output signals to the pins on the FRDM-K64F. This allows for better readability,
 thus making the code easier to maintain, debug and safer. 
+
+\newpage
+\subsubsection{DCM Design}
 
 \newpage
 \section{Part 2}
