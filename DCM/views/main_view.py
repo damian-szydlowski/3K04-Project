@@ -204,6 +204,19 @@ class MainFrame(ctk.CTkFrame):
         user_label = ctk.CTkLabel(top_bar, textvariable=self.user_var, font=ctk.CTkFont(family="Helvetica", size=12), fg_color="transparent")
         user_label.pack(side="left", padx=10)
 
+          # --- NEW: comms status row ---
+        status_row = ctk.CTkFrame(self, height=32, corner_radius=0)
+        status_row.pack(side="top", fill="x", padx=10, pady=(6, 0))
+
+        self.comm_dot = ctk.CTkLabel(status_row, text="●", font=ctk.CTkFont(size=18))
+        self.comm_dot.pack(side="left", padx=(4, 6))
+
+        self.comm_text = ctk.CTkLabel(status_row, text="Disconnected")
+        self.comm_text.pack(side="left")
+
+        self.device_text = ctk.CTkLabel(status_row, text="")
+        self.device_text.pack(side="left", padx=12)
+
         # The main part of the screen
         main_content = ctk.CTkFrame(self, fg_color="transparent")
         main_content.pack(side="top", fill="both", expand=True, padx=10, pady=10)
@@ -233,6 +246,13 @@ class MainFrame(ctk.CTkFrame):
         bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
         bottom_frame.pack(side="bottom", fill="x", pady=10)
 
+        ctk.CTkButton(bottom_frame, text="Connect (mock)",
+                      width=140, command=self.controller.mock_connect).pack(side="left", padx=6)
+        ctk.CTkButton(bottom_frame, text="Switch Device (mock)",
+                      width=170, command=self.controller.mock_switch_device).pack(side="left", padx=6)
+        ctk.CTkButton(bottom_frame, text="Disconnect (mock)",
+                      width=160, command=self.controller.mock_disconnect).pack(side="left", padx=6)
+
         # The logout button now lives in the bottom right
         logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
         logout_btn.pack(side="right", padx=10)
@@ -247,3 +267,16 @@ class MainFrame(ctk.CTkFrame):
     def _do_logout(self):
         # Tells the controller to log us out
         self.controller.handle_logout()
+
+    def update_comm_status(self, connected: bool, device_id: str | None):
+        # Update the visual status for Point 4 and show device id.
+        if connected:
+            # Green dot, connected text, and device id
+            self.comm_dot.configure(text_color="#22c55e")  # green
+            self.comm_text.configure(text="Connected")
+            self.device_text.configure(text=f"Device: {device_id or 'Unknown'}")
+        else:
+            # Gray dot and disconnected text
+            self.comm_dot.configure(text_color="#9ca3af")  # gray
+            self.comm_text.configure(text="Disconnected")
+            self.device_text.configure(text="")
