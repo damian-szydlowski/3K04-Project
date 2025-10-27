@@ -691,6 +691,74 @@ are easier to debug with higher level identification and function of each GPIO.
 \end{enumerate}
 
 
+The below figures show the general parameter page with some values inputted as well as the results of putting 
+invalid values into parameter page. 
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{genparam}
+        \centering
+        \includegraphics[width=\textwidth]{genparams.png}
+        \caption{DCM Parameter Page with Values Filled}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{rangeparam}
+        \centering
+        \includegraphics[width=0.9\textwidth]{rangeparam.png}
+        \caption{DCM Parameter Error When Number Inputted is Out of Range}
+    \end{figure}
+\end{tcolorbox}
+
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{numparam}
+        \centering
+        \includegraphics[width=0.9\textwidth]{numparam.png}
+        \caption{DCM Parameter Error When Non-Number is Inputted}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{urlirl}
+        \centering
+        \includegraphics[width=0.9\textwidth]{urlirl.png}
+        \caption{DCM Parameter Error When URL is Larger Than IRL}
+    \end{figure}
+\end{tcolorbox}
+
+\newpage
+\subsubsubsection{Mode Selection and Data Retrieval}
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} To test data storage, ensuring proper saving of user data
+   \item \textbf{Input Conditions:} Registering account, logging in, and saving parameters.
+   \item \textbf{Expected Output:} User data is now found in the associated JSON files.
+   \item \textbf{Actual Output:}  Registered user data and parameters are found in their respective JSON files.
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
+This test was done in conjunction to previous tests except with a different user registered. A user "asd" 
+with password "asd" was used for faster log ins. The following images are of the JSON files and the saved parameters 
+from the previous test. 
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{savedparams}
+        \centering
+        \includegraphics[width=0.8\textwidth]{savedparams.png}
+        \caption{Stored Parameter File}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{saveduser}
+        \centering
+        \includegraphics[width=0.8\textwidth]{saveduser.png}
+        \caption{Stored Users File}
+    \end{figure}
+\end{tcolorbox}
+
+
+
 \newpage
 \subsection{GenAI Usage}
 
