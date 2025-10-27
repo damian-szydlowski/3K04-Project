@@ -96,21 +96,31 @@
 \pagenumbering{arabic}
 \newpage
 \section{Group Members}
-\begin{tabular}{|c|c|c|}
-    \hline
-    Name        & MacID         & Student Number    \\
-    \hline
-    Ryan Su     & sur21         & 400507973         \\
-    \hline
-    Cameron Lin & lin422        & 400535393         \\
-    \hline
-    Braden McEachern & mceacb1  & 400527617 \\
-    \hline
-    Damian Szydlowski & szydlowd & 400512629 \\
-    \hline
-    Menakan Thamilchelvan & thamilcm & 400510755\\ 
-    \hline
-\end{tabular}
+\begin{table}[H]
+    \caption{Table of Group Members}
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        Name        & MacID         & Student Number    \\
+        \hline
+        Ryan Su     & sur21         & 400507973         \\
+        \hline
+        Cameron Lin & lin422        & 400535393         \\
+        \hline
+        Braden McEachern & mceacb1  & 400527617 \\
+        \hline
+        Damian Szydlowski & szydlowd & 400512629 \\
+        \hline
+        Menakan Thamilchelvan & thamilcm & 400510755\\ 
+        \hline
+        Yash Panchal & & \\
+        \hline
+        Said Dokmak & & \\
+        \hline
+        Ishpreet Bal & & \\
+        \hline
+    \end{tabular}
+\end{table}
 
 \newpage
 \section{Abbreviations}
@@ -165,6 +175,47 @@ the DCM while updating and maintaining documentation.
     \item Overall system requirements (summarized from provided specification documents). It can be informal or semi-formal.
     \item Mode-specific requirements: AOO, VOO, AAI, VVI.
 \end{itemize}
+
+\subsubsection{System Requirements}
+
+\begin{enumerate}[label=]
+    \item \textbf{System Modes:} The system shall implement the single chamber pacing modes AOO, VOO, VVI, and AAI. This will act 
+    as the foundational functionality of the pacemaker. 
+    \item \textbf{Hardware Hiding:} Hardware interactions shall be abstracted in a hardware hiding layer such that 
+    logical control signals are mapped directly to hardware pins without direct pin references in the model. This 
+    will aid in readability and maintability of the system.
+    \item \textbf{Implementation:} The pacing logic shall be implemented in Simulink and the DCM interface shall 
+    be implemented as a seperate GUI that will communicate with the pacemaker model. This is to ensure modularity 
+    between the interface and embedded system.
+\end{enumerate}
+
+\subsubsection{Programming Requirements}
+
+\begin{enumerate}[label=]
+    \item \textbf{Programmable Pulse Amplitude:} The pacemaker shall generate atrial and ventricle signals with amplitudes 
+    that are configurable by the user. Adjustable amplitudes will allow for tuning of pacing strength.
+    \item \textbf{Programmable Pulse Width:} The pacemaker shall generate atrial and ventricle signals with pulse widths 
+    that are configurable by the user. 
+    \item \textbf{Programmable Rate Timing:} The pacemaker shall have programmable LRL, lower rate limit, and URL,
+    upper rate limits, that control the minimum and maximum pacing rates. This is to prevent bradycardia, abnormally low heart rhythms,
+    and tachycardia, abnormally high heart rhythms. 
+    \item \textbf{Programmable Refactory Periods:} Both the atiral and ventricle pulse modes shall both implement a 
+    refactory period during which sensed events are ignored to prevent double sensing of pulses or ringing. 
+    \item \textbf{Programmable Sensitivity:} A programmable sensitivity, or threshold for event detection, shall be implemented 
+    to be adjustable by the DCM. This allows for adaptation to patients and noise. 
+    \item \textbf{Pacing Responses:} Each pacing mode shall follow the response of its corresponding lettering:
+    \begin{enumerate}[label=]
+        \item \textbf{O:} Asynchronous pacing that ignores senses
+        \item \textbf{I:} Inhibited pacing from sensed pulses
+        \item \textbf{T:} Triggered pacing from sensed pulses
+    \end{enumerate}
+\end{enumerate}
+
+\subsubsection{Hardware Requirements}
+
+\begin{enumerate}[label=]
+    \item \textbf{}
+\end{enumerate}
 
 \subsubsection{DCM Requirements}
 The user shall be capable of the following:
@@ -250,10 +301,9 @@ The modifiable ventricular variables are:
 \subsubsubsection{Monitored Input Variables}
 
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{InMon}
         \includegraphics[width=\textwidth]{InMon.png}
-        \caption{Monitored Input Variables}
-        \label{InMon}
+        \caption{Monitored Input Variables}     
     \end{figure}
 \end{tcolorbox}
 The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3}. These are the atrial and ventricle detection 
@@ -262,10 +312,9 @@ variables. The pulses are sensed with through GPIO pins connecting to a board si
 \newpage
 \subsubsubsection{Stateflow Modules}
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{StateMod}
         \includegraphics[width=\textwidth]{StateMod.png}
-        \caption{Stateflow Modules}
-        \label{StateMod}
+        \caption{Stateflow Modules}   
     \end{figure}
 \end{tcolorbox}
 The stateflow diagram in Simulink is shown above. It shows the transition between each mode given the mode input shown in 
@@ -274,10 +323,9 @@ The stateflow diagram in Simulink is shown above. It shows the transition betwee
 \newpage
 \subsubsubsection{AOO Stateflow Model}
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{AOOSF}
         \includegraphics[width=\textwidth]{AOO.png}
-        \caption{AOO Stateflow Model}
-        \label{AOOSF}
+        \caption{AOO Stateflow Model}     
     \end{figure}
 \end{tcolorbox}
 The above stateflow, \hyperref[AOOSF]{Figure 5}, shows the stateflow for the AOO mode. It sets values 
@@ -286,10 +334,9 @@ controlling discharge and charging of the capacitor to specified nominal values.
 \newpage
 \subsubsubsection{VOO Stateflow Model}
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{VOOSF}
         \includegraphics[width=\textwidth]{VOO.png}
-        \caption{VOO Stateflow Model}
-        \label{VOOSF}
+        \caption{VOO Stateflow Model}        
     \end{figure}
 \end{tcolorbox}
 Similar to the AOO stateflow, the above figure, \hyperref[VOOSF]{Figure 6}, shows the states of 
@@ -298,10 +345,9 @@ charging and discharging of the capacitor using specified nominal values.
 \newpage
 \subsubsubsection{VII Stateflow Model}
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{VVISF}
         \includegraphics[width=\textwidth]{VVI.png}
-        \caption{VVI Stateflow Model}
-        \label{VVISF}
+        \caption{VVI Stateflow Model}       
     \end{figure}
 \end{tcolorbox}
 The above stateflow, \hyperref[VVISF]{Figure 7} shows the FSM for the VVI model. The initial state, pVRP, is the state 
@@ -314,10 +360,9 @@ discharging state where the pacing pulse is produced.
 \newpage
 \subsubsubsection{AAI Stateflow Model}
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{AAISF}
         \includegraphics[width=\textwidth]{AAI.png}
-        \caption{AAI Stateflow Model}
-        \label{AAISF}
+        \caption{AAI Stateflow Model}        
     \end{figure}
 \end{tcolorbox}
 The above stateflow, \hyperref[AAISF]{Figure 8} shows the process for the AAI mode. The initial state, pARP, is 
@@ -332,10 +377,9 @@ has passed.
 \subsubsubsection{Hardware Hiding}
 
 \begin{tcolorbox}
-    \begin{figure}[H]
+    \begin{figure}[H]\label{HardHide}
         \includegraphics[width=\textwidth]{HardwareHiding.png}
-        \caption{Hardware Hiding of Model}
-        \label{HardHide}
+        \caption{Hardware Hiding of Model}        
     \end{figure}
 \end{tcolorbox}
 
@@ -381,7 +425,7 @@ hardware hiding.
 \subsubsection{Hardware Hiding}
 Hardware hiding is also briefly covered in the \hyperref[dessec]{design section}. The purpose of this module is 
 to convert the signals from the stateflow logic module into outputted electrical signals through pins. As shown in 
-\hyperref[HardHide]{Figure 9}, pins are mapped to certain electrical signals such as atrial outputs, ventrical outputs, 
+\hyperref[HardHide]{Figure 9}, pins are mapped to certain electrical signals such as atrial outputs, ventricle outputs, 
 front end signals, and general pin configurations such as grounding pins. This is designed to ensure coding and modules 
 are easier to debug with higher level identification and function of each GPIO. 
 
