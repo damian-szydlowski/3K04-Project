@@ -214,18 +214,21 @@ the DCM while updating and maintaining documentation.
 \subsubsection{Hardware Requirements}
 
 \begin{enumerate}[label=]
-    \item \textbf{}
+    \item \textbf{Hardware Hiding:} A layer of hardware abstraction shall be put in place to map digital logic 
+    to analog front-end hardware. 
+    \item \textbf{Front-End Enable:} A signal shall enable or disable front-end sensing circuitry. This allows for 
+    controlled activation of ADCs and amplifiers to reduce noise and power consumption.
 \end{enumerate}
 
 \subsubsection{DCM Requirements}
-The user shall be capable of the following:
-\begin{itemize}
-    \item Utilizing and managing windows for display of text and graphics.
-    \item Processing user positioning and input buttons.
-    \item Displaying all programmable parameters for review and modification.
-    \item Visually indicating when telemetry is lost due to the device being out of range or noise.
-    \item Vndicating when a different PACEMAKER device is approached than was previously interrogated
-\end{itemize}
+\begin{enumerate}[label=]
+    \item \textbf{User Authentication:} The DCM GUI shall provide user registration and login functionality supporting
+    10 different stored users. This provides access control for the programming interface.
+    \item \textbf{Parameter Display and Editing:} The DCM shall display and allow a user to edit pacemaker settings 
+    and parameters such as LRL, URL, Atrial/Ventricle Amplitude, Pulse Width, and Sensitivity.
+    \item \textbf{Status Indicators:} The DCM shall provide visible indicators of device connection status and communication loss. 
+    This is to ensure the user is aware of the systems states and faults. 
+\end{enumerate}
 
 \newpage
 \subsection{Design}
@@ -389,6 +392,136 @@ thus making the code easier to maintain, debug and safer.
 
 \newpage
 \subsubsection{DCM Design}
+
+The design of the DCM has 3 seperate sections; the model, view and controller. 
+
+\subsubsubsection{Model}
+The model section handles the applications data and user logic. It does not interact directly with the interface but 
+only manages data and enforces user authentication. Below is an explanation of the individual Python files and their 
+functionality:
+
+\paragraph{User Model}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} To manage all user account information.
+    \item \textbf{Functions:}
+    \begin{itemize}
+        \item Loads and saves login information to or from the users.json file.
+        \item Registers new users, checking for duplicates and the max user limit.
+        \item Authenticates logins by verifying user passwords
+        \item Provides a method to get the amount of registered users which is displayed by the DCM.
+    \end{itemize}
+\end{enumerate}
+
+\paragraph{Pacing Model}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} Manages pacing parameters for all users.
+    \item \textbf{Functions:}
+    \begin{itemize}
+        \item Loads and saves settings to or from pacing\_settings.json
+        \item The data is structured as a dictionary with settings as the key and value as the value.
+        \item Saves a dictionary of parameters for a specific user and pacemaker mode
+        \item Retrieves the saved parameters for a user and mode
+    \end{itemize}
+\end{enumerate}
+
+
+\paragraph{Egram Model}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} Manages the capture of electrogram data 
+    \item \textbf{Functions:}
+    \begin{itemize}
+        \item Adds a single data point to an internal listed
+        \item Returns the list of captured data 
+        \item Clears the captured data to start a new session 
+    \end{itemize}
+\end{enumerate}
+
+\subsubsubsection{View}
+The view section is what the user sees and interacts with. It is built with the customtkinter 
+library for a more aesthetically pleasing interface. They do not have any control logic, only 
+to display data and send user actions such as button clicks to the controller. Below 
+are an explanation of each view:
+
+\paragraph{Login View}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} Provides a screen for users to login 
+    \item \textbf{Functions:} 
+    \begin{itemize}
+        \item Welcome class displays the login form and a register button.
+        \item Register class displays the new user registration form and a back button.
+        \item When a button is clicked, it collects text from the entry fields and calls 
+        a method on the controller that handles the login logic. 
+        \item The welcome view calls a function to display the current registered user count.
+    \end{itemize}
+\end{enumerate}
+
+\paragraph{Main View}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} Provides the main application screen after logging in
+    \item \textbf{Functions:} 
+    \begin{itemize}
+        \item MainFrame is the main menu. It shows buttons for each pacing mode AOO, VOO, AAI and VVI as well 
+        as mock connection controls. It also displays the current connection status.
+        \item DataEntry is the form for editing parameters. It displays all parameters and handles validation 
+        of data such as the input being in the correct range and is a numeric type before sending the data to the controller.
+    \end{itemize}
+\end{enumerate}
+
+\subsubsubsection{Controller}
+
+\paragraph{Controller}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The main application class that uses instances of the models and view frames. 
+    \item \textbf{Functions:} 
+    \begin{itemize}
+        \item It initializes itself and creates all view frames, UserModel and PacingModel. It then stores these in a dictionary. 
+        \item The navigation is handled by a show\_frame function which requests a frame from the dictionary 
+        and uses tkinters library function, tkraise(), to bring it into view. 
+        \item Event handling is seperated into handling registration and saving settings. For 
+        For registration it takes the username and password from the view, calls the UserModel to verify them, 
+        then shows a message to confirm or deny entry. The saving of settings takes mode and data from the DataEntry view 
+        and passes them to the PacingModel to be saved. 
+    \end{itemize}
+\end{enumerate}
+
+\paragraph{Main}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} Its purpose and sole function
+    is to create an instance of the controller and run it in the main loop, starting the customtkinter application. 
+\end{enumerate}
+
+\subsubsubsection{Views of DCM GUI}
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{loginscreen.png}
+        \caption{Login Screen of DCM}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{mainmenu.png}
+        \caption{Main Menu of DCM}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{genparams.png}
+        \caption{Data Entry View}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{switchindevice.png}
+        \caption{Switch in Device Detection from DCM}
+    \end{figure}
+\end{tcolorbox}
 
 \newpage
 \section{Part 2}
@@ -812,16 +945,5 @@ adapted and tested. We also used it to clarify Python functions and libraries su
 and to troubleshoot installing tkinter. We had AI to clarify comments within the code as well. All design 
 decisions, requirements, and validation were done by our team, and we reviewed and verified all AI outputs 
 before inclusion. 
-
-
-% ----------------------------------------------------
-\section{General Notes}
-\begin{itemize}
-    \item This is a general outline based on the Deliverable 1 handout. You should make sure everything listed in the handout it is included. 
-    \item Use screenshots of Simulink diagrams and DCM interface where appropriate.
-    \item Ensure the requirements are traceable to design and test cases.
-    \item Be concise and make things clear.
-    \item You can add other sections, and you can also decide not to use this structure, however, I am including the main general sections we will expect to see.
-\end{itemize}
 
 \end{document}
