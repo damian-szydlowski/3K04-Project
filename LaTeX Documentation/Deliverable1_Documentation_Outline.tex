@@ -175,8 +175,9 @@ The user shall be capable of the following:
     \item Vndicating when a different PACEMAKER device is approached than was previously interrogated
 \end{itemize}
 
-\subsection{Design}
 
+\subsection{Design}
+\label{dessec}
 In this section, you want to expand on the design decisions based on the requirements. You should be specific about your system design and how the various components relate together.
 
 \begin{itemize}
@@ -221,27 +222,27 @@ relating to pacemaker operation. For general inputs, the changeable variables ar
 
 \begin{itemize}
     \item \textbf{Mode} - Refers to bradycardia operating modes, e.g AOO, VOO, AAI and VVI.
-    \item \textbf{Low Rate Interval} - The number of generated pace pulses per minute.
-    \item \textbf{Hysteresis Pace} - When enabled, a longer period is waited before pacing after sensing an event.
-    \item Hysteresis Interval 
+    \item \textbf{Low Rate Interval} - The number of generated pace pulses per minute, converted from a millisecond time period. 
+    \item \textbf{Hysteresis Pace} - When enabled, 1, a longer period is waited before pacing after sensing an event to prevent unwanted pacing pulses from ringing from an event. 
+    \item \textbf{Hysteresis Interval} - Specifies the time interval waited in the hysteresis mode in milliseconds.
 \end{itemize}
 The modfiable atrial variables are:
 
 \begin{itemize}
-    \item \textbf{Pace Pulse Width} - Changes the width of the pace pulse
-    \item \textbf{Pace Pulse Amplitude} - Changes the amplitude of the pace pulse
+    \item \textbf{Pace Pulse Width} - Changes the width, length of time, of the pace pulse.
+    \item \textbf{Pace Pulse Amplitude} - Changes the amplitude, voltage, of the pace pulse.
     \item \textbf{ARP (Atrial Refactory Period)} - The programmed time interval following an atrial event during which time atrial
             events shall not inhibit nor trigger pacing
-    \item \textbf{Sense} - 
+    \item \textbf{Sense (Sensitivity)} - Determines the minimum value an atrial signal must be to be considered by the pacemaker. 
 \end{itemize}
 The modifiable ventricular variables are:
 
 \begin{itemize}
-    \item \textbf{Pace Pulse Width} - Changes the width of the pace pulse
-    \item \textbf{Pace Pulse Amplitude} - Changes the amplitude of the pace pulse
+    \item \textbf{Pace Pulse Width} - Changes the width, length of time, of the pace pulse.
+    \item \textbf{Pace Pulse Amplitude} - Changes the amplitude, voltage, of the pace pulse.
     \item \textbf{VRP (Ventricle Refactory Period)} - The programmed time interval following an ventricle event during which time atrial
-            events shall not inhibit nor trigger pacing
-    \item Sense
+            events shall not inhibit nor trigger pacing.
+    \item \textbf{Sense (Sensitivity)} - Determines the minimum value a ventricle signal must be to be considered by the pacemaker.
 \end{itemize}
 
 \newpage
@@ -341,8 +342,7 @@ The above image, \hyperref[HardHide]{Figure 9} shows abstraction of the GPIO pin
 It connects logical output signals to the pins on the FRDM-K64F. This allows for better readability,
 thus making the code easier to maintain, debug and safer. 
 
-
-
+\newpage
 \section{Part 2}
 
 \subsection{Requirements Potential Changes}
@@ -351,24 +351,38 @@ Identify which requirements may evolve in the next deliverable (e.g., adding mor
 \subsection{Design Decision Potential Changes}
 List design choices that may need revisiting (e.g., choice of libraries, interface design, architecture).
 
+\newpage
 \subsection{Module Description}
-\begin{itemize}
-    \item Purpose of the component
-    \item Key functions/methods (public vs internal)
-    \item Global or state variables (if any)
-    \item Interactions with other components
-\end{itemize}
 
+Although breifly highlighted in the \hyperref[dessec]{design section} of this documentation. This section will go 
+into more detail about the purpose of each module, key functionality, variables, and how each module interacts with 
+one another. 
+
+As shown in \hyperref[SimWholeView]{Figure 1}, there are 3 primary modules operating the pacemaker; \textbf{input constant variables, 
+stateflow logic for modes, and hardware hiding.}
+
+\subsubsection{Input Constant Variables Module}
+This module is highlighted in the \hyperref[dessec]{design section}. It goes through all the state variables that 
+are changeable parameters of the pacemaker. These inputs include general inputs such as the pacing mode, low rate interval, and hysteresis settings, as well 
+as parameters for atrial and ventricle pacing. These parameters are then used in the stateflow logic module to 
+complete pacing to user specifications.
+
+\subsubsection{Stateflow Logic}
+This module has many submodules which are also covered in the \hyperref[dessec]{design section}. The overall state machine controlling 
+mode selection and reseting of variables to prevent unwanted pacing behaviour is shown in \hyperref[StateMod]{Figure 4}. This module 
+converts input parameters into raw data that can be further converted to electrical signals. This module recieves data 
+from the input constant variables module as well as from the monitored input variables. This module then feeds into 
+hardware hiding. 
+
+\subsubsection{Hardware Hiding}
+Hardware hiding is also briefly covered in the \hyperref[dessec]{design section}. The purpose of this module is 
+to convert the signals from the stateflow logic module into outputted electrical signals through pins. As shown in 
+\hyperref[HardHide]{Figure 9}, pins are mapped to certain electrical signals such as atrial outputs, ventrical outputs, 
+front end signals, and general pin configurations such as grounding pins. This is designed to ensure coding and modules 
+are easier to debug with higher level identification and function of each GPIO. 
+
+\newpage
 \subsection{Testing}
-Document test cases for each module. Each test case should include:
-
-\begin{enumerate}
-    \item Purpose of the test
-    \item Input conditions
-    \item Expected output
-    \item Actual output
-    \item Result (Pass/Fail)
-\end{enumerate}
 
 \subsubsection{SimuLink Mode Testing}
 
@@ -391,7 +405,8 @@ Document test cases for each module. Each test case should include:
     \end{figure}
 \end{tcolorbox}
 
-\hyperref[AOOpulse]{Figure 11} below shows a zoomed in view of one of the pulses in the AOO test above, \hyperref[AOOtest]{Figure 11}. 
+\newpage
+\hyperref[AOOpulse]{Figure 11} below shows a zoomed in view of one of the pulses in the AOO test above, \hyperref[AOOtest]{Figure 10}. 
 
 \begin{tcolorbox}
     \begin{figure}[H]
@@ -613,15 +628,67 @@ Document test cases for each module. Each test case should include:
     \begin{figure}[H]\label{Hystest3}
         \includegraphics[width=\textwidth]{hytheresistest3.png}
         \caption{Hysterisis Test 3}
-        
     \end{figure}
 \end{tcolorbox}
 
-For instance, on the DCM side, you should test registration and login, parameter input validation, and mode selection and data storage/retrieval. This is not a complete list, depending on your system, you will need to test other components.
+\newpage
+\subsubsection{DCM Testing}
+
+\subsubsubsection{Login and Registration}
+
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} The purpose of this test is to verify correct storage of newly registered user data 
+   and allow login. 
+   \item \textbf{Input Conditions:} A random username and password. This will be used again in the login screen to access the DCM. 
+   \item \textbf{Expected Output:} A window should pop up notifying the user an account has been registered. The 
+   DCM controls should be accessible after the user logs in. 
+   \item \textbf{Actual Output:} Dialogue is shown and the file is updated to include new user data. The user is then brought to the 
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{regtest}
+        \includegraphics[width=\textwidth]{registertest.png}
+        \caption{Registration Test}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{regres}
+        \centering
+        \includegraphics[width=0.9\textwidth]{registerres.png}
+        \caption{Registration Result}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{logtest}
+        \centering
+        \includegraphics[width=0.9\textwidth]{logintest.png}
+        \caption{Login Test}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]\label{logres}
+        \includegraphics[width=\textwidth]{loginres.png}
+        \caption{Login Result}
+    \end{figure}
+\end{tcolorbox}
+
+\newpage
+\subsubsubsection{Parameter Input Validation}
+\begin{enumerate}[label=]
+   \item \textbf{Purpose:} To enforce numeric types within an allowed range and to ensure the upper rate interval is greater than lower rate interval. 
+   \item \textbf{Input Conditions:} Entering a non-numeric, an out of range number and an upper rate interval that is greater than lower rate interval in parameter settings. 
+   \item \textbf{Expected Output:} Invalid input dialogue is shown and parameter changes are not saved.
+   \item \textbf{Actual Output:}  
+   \item \textbf{Result:} Pass
+\end{enumerate}
+
 
 \newpage
 \subsection{GenAI Usage}
-Provide a summary of any usage of GenAI in developing the model, DCM or writing this section. If you did not use GenAI tools at all, state that.
 
 We used a Generative AI assistant to support development of the DCM. It provided starter boilerplate for a 
 Tkinter app with a welcome screen, registration and login, JSON storage capped at ten users, which we then 
