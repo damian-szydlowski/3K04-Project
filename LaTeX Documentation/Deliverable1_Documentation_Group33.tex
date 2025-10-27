@@ -233,20 +233,7 @@ the DCM while updating and maintaining documentation.
 \newpage
 \subsection{Design}
 \label{dessec}
-In this section, you want to expand on the design decisions based on the requirements. You should be specific about your system design and how the various components relate together.
 
-\begin{itemize}
-    \item System architecture (major subsystems, hardware hiding, pin mapping).
-    \item Programmable parameters (rate limits, amplitudes, pulse widths, refractory periods, etc.).
-    \item Hardware inputs and outputs (signals sensed, signals controlled).
-    \item State machine design for each pacing mode (with diagrams if applicable). You can also use a tabular method.
-    \item Simulink diagram
-    \item Screenshots of your DCM, explaining its software structure
-\end{itemize}
-
-You should also be explicit on how your design decisions map directly to the requirements.
-
-\newpage
 \subsubsection{Simulink Design}
 
 \subsubsubsection{Overall Design}
@@ -300,7 +287,6 @@ The modifiable ventricular variables are:
     \item \textbf{Sense (Sensitivity)} - Determines the minimum value a ventricle signal must be to be considered by the pacemaker.
 \end{itemize}
 
-\newpage
 \subsubsubsection{Monitored Input Variables}
 
 \begin{tcolorbox}
@@ -900,7 +886,7 @@ invalid values into parameter page.
     \begin{figure}[H]\label{urlirl}
         \centering
         \includegraphics[width=0.9\textwidth]{urlirl.png}
-        \caption{DCM Parameter Error When URL is Larger Than IRL}
+        \caption{DCM Parameter Error When URL is Larger Than LRL}
     \end{figure}
 \end{tcolorbox}
 
