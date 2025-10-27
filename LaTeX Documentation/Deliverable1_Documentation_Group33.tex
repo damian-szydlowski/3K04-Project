@@ -379,7 +379,7 @@ thus making the code easier to maintain, debug and safer.
 \newpage
 \subsubsection{DCM Design}
 
-The design of the DCM has 3 seperate sections; the model, view and controller. 
+The design of the DCM has 3 seperate sections; the \textbf{model, view and controller.} 
 
 \subsubsubsection{Model}
 The model section handles the applications data and user logic. It does not interact directly with the interface but 
@@ -513,10 +513,31 @@ are an explanation of each view:
 \section{Part 2}
 
 \subsection{Requirements Potential Changes}
-Identify which requirements may evolve in the next deliverable (e.g., adding more modes, communication, new parameters).
+
+\begin{enumerate}[label=]
+    \item \textbf{Pacing Modes:} Additional pacing modes are to be developed such as AOOR, VOOR, AAIR, and VVIR. 
+    \item \textbf{Hardware Communication:} The connection between hardware and GUI may be developed in the next deliverable. 
+    The functionality implemented in this deliverable will be used to interface with the board.
+    \item \textbf{Parameter Changes:} As additional pacing modes are to be developed, this in turn will bring additional parameters that will 
+    need to be added and configured. 
+    \item \textbf{Electrogram Functionality:} The electrogram functionality will be used to store and display egram data provided by the 
+    simulating board. 
+\end{enumerate}
+
 
 \subsection{Design Decision Potential Changes}
-List design choices that may need revisiting (e.g., choice of libraries, interface design, architecture).
+
+\begin{enumerate}[label=]
+    \item \textbf{Expansion of Libraries:} As hardware communication will be implemented in the next iteration, 
+    hardware communication libraries such as those implementing serial communication will need to be explored.
+    \item \textbf{Expansion of GUI:} To accomodate for more pacing modes, the GUI will need to be modified. Furthermore, 
+    for improved quality of life features, more graphics and interactive features may be added. 
+    \item \textbf{DCM Architecture:} The DCM system may need to be refactored to implement hardware communication. 
+    \item \textbf{Simulink Architecture:} As 4 more additional modes are being added for a total of 8 pacing modes, the 
+    Simulink structure may need to be modified to integrate all new features more easily. 
+    \item \textbf{Data Verification:} As data will be actively transfered from the DCM to the pacemaker hardware, data integrity further becomes 
+    more crucial to maintain. A system to verify parameters are correctly sent and saved will need to be implemented. 
+\end{enumerate}
 
 \newpage
 \subsection{Module Description}
