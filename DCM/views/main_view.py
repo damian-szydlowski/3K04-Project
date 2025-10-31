@@ -65,7 +65,6 @@ class DataEntry(ctk.CTkFrame):
         # Let's create all the labels and entry boxes in a loop
         for i, param_name in enumerate(param_list):
             
-            # --- THIS IS THE MODIFIED PART ---
             # Get the rule for this parameter
             rule = PARAMETER_VALIDATION_RULES.get(param_name)
             label_text = f"{param_name}:" # Start with the base text
@@ -77,7 +76,6 @@ class DataEntry(ctk.CTkFrame):
             
             # Create the label with the new text
             label = ctk.CTkLabel(controls_frame, text=label_text)
-            # --- END OF MODIFICATION ---
             
             label.grid(row=i, column=0, sticky="e", padx=5, pady=5)
             
