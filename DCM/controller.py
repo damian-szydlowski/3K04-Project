@@ -7,7 +7,7 @@ from models.user_model import UserModel, MAX_USERS
 from models.pacing_model import PacingModel
 
 # Views
-from views.login_views import Welcome, Register
+from views.main_view import MainFrame, DataEntry, EgramView
 from views.main_view import MainFrame, DataEntry
 
 # Appearance
@@ -48,7 +48,7 @@ class DCMApp(ctk.CTk):
         self.container.grid_columnconfigure(0, weight=1)
 
         self.frames: Dict[str, ctk.CTkFrame] = {}
-        for F in (Welcome, Register, MainFrame, DataEntry):
+        for F in (Welcome, Register, MainFrame, DataEntry, EgramView):
             frame = F(parent=self.container, controller=self)
             self.frames[F.__name__] = frame
             frame.grid(row=0, column=0, sticky="nsew")
@@ -63,6 +63,8 @@ class DCMApp(ctk.CTk):
             frame.refresh_user_count()
         if frame_name == "MainFrame":
             self._push_comm_status_to_ui()
+        if frame_name == "EgramView":
+            frame.set_device(self.current_device_id)
         frame.tkraise()
 
     # ---------------- Authentication ----------------
@@ -80,6 +82,7 @@ class DCMApp(ctk.CTk):
             self.current_user = username
             self.frames["MainFrame"].set_user(username)
             self.frames["DataEntry"].set_user(username)
+            self.frames["EgramView"].set_user(username)
             self._push_comm_status_to_ui()
             self.show_frame("MainFrame")
         else:
@@ -89,7 +92,28 @@ class DCMApp(ctk.CTk):
         self.current_user = None
         self.frames["MainFrame"].set_user("")
         self.frames["DataEntry"].set_user("")
+        self.frames["EgramView"].set_user("")
         self.show_frame("Welcome")
+
+    def start_egram(self, channel: str):
+        if not self.connected:
+            messagebox.showerror("Error", "Not connected to a device.")
+            return
+
+        # Backend will:
+        #   - Send a command to start streaming egram data.
+        #   - Read the incoming samples and update the view.
+        print(f"[DEBUG] Would start egram for channel: {channel}")
+        messagebox.showinfo("Egram", f"Start egram for: {channel} (front end stub).")
+
+    def stop_egram(self):
+        if not self.connected:
+            messagebox.showerror("Error", "Not connected to a device.")
+            return
+
+        print("[DEBUG] Would stop egram stream.")
+        messagebox.showinfo("Egram", "Stop egram (front end stub).")
+
 
     # ---------------- Parameter entry ----------------
     def show_data_entry_page(self, mode: str):
@@ -105,13 +129,30 @@ class DCMApp(ctk.CTk):
             messagebox.showerror("Error", "Not logged in.")
             return
         self.pacing_model.save_settings(self.current_user, mode, data)
-        messagebox.showinfo("Success", f"{mode} settings have been saved.")
+
+        self.send_parameters_to_device(mode, data)
+
+        messagebox.showinfo("Success", f"{mode} settings have been saved and sent to device.")
         self.show_frame("MainFrame")
+
+    def send_parameters_to_device(self, mode: str, data: Dict[str, str]):
+        "Placeholder: backend will implement building and sending the packet."
+        if not self.connected:
+        # Optionally warn, but avoid blocking save
+            messagebox.showwarning("Warning", "Parameters saved, but device is not connected.")
+            return
+
+    # Here you will call your serial code to build and send the packet.
+    # For Deliverable 2 front end work, this stub is enough.
+    print(f"[DEBUG] Would send parameters for mode {mode}: {data}")
+
 
     # ---------------- Comms helpers (points 4 & 7) ----------------
     def _push_comm_status_to_ui(self):
         # Update any screens that show comms (MainFrame for now)
         self.frames["MainFrame"].update_comm_status(self.connected, self.current_device_id)
+        if "EgramView" in self.frames:
+            self.frames["EgramView"].set_device(self.current_device_id)
 
     def _set_comm_state(self, connected: bool, device_id: str | None):
         """Single place to change comm state and trigger UI + change detection (Point 4 and 7)."""
@@ -146,6 +187,36 @@ class DCMApp(ctk.CTk):
             return
         new_id = "PKM-002" if self.current_device_id != "PKM-002" else "PKM-003"
         self._set_comm_state(True, new_id)
+
+    def handle_verify_parameters(self):
+        """Front end entry point to verify parameters stored on the device."""
+        if not self.current_user:
+            messagebox.showerror("Error", "Please log in first.")
+            return
+        if not self.connected:
+            messagebox.showerror("Error", "Not connected to a device.")
+            return
+
+        ok = self.verify_parameters_on_device()
+
+        if ok:
+            messagebox.showinfo("Verification", "Parameters on the pacemaker match the DCM settings.")
+        else:
+            messagebox.showwarning("Verification", "Parameters on the pacemaker do not match the DCM settings.")
+
+    def verify_parameters_on_device(self) -> bool:
+        """
+        Placeholder for backend verification logic.
+        Expected behavior:
+        - Read parameters back from the device over serial.
+        - Compare to self.pacing_model settings for self.current_user.
+        Return True if they match, False otherwise.
+        """
+        print("[DEBUG] Would verify parameters on device here.")
+        # For now, pretend verification passes
+        return True
+
+
 
     # ---------------- Utilities for other views ----------------
     def get_user_count(self) -> int:

@@ -1,25 +1,42 @@
 import customtkinter as ctk
 from tkinter import messagebox  
-from typing import Dict 
+from typing import Dict, Optional
 
 # This map tells us which parameters are active for each pacing mode
 PARAMETER_MAP = {
-    "AOO": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width"],
-    "VOO": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width"],
-    "AAI": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width", "ARP"],
-    "VVI": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width", "VRP"],
+    "AOO": ["Lower Rate Limit", "Upper Rate Limit",
+            "Atrial Amplitude", "Atrial Pulse Width"],
+    "VOO": ["Lower Rate Limit", "Upper Rate Limit",
+            "Ventricular Amplitude", "Ventricular Pulse Width"],
+    "AAI": ["Lower Rate Limit", "Upper Rate Limit",
+            "Atrial Amplitude", "Atrial Pulse Width", "ARP",
+            "Atrial Sensitivity"],
+    "VVI": ["Lower Rate Limit", "Upper Rate Limit",
+            "Ventricular Amplitude", "Ventricular Pulse Width", "VRP",
+            "Ventricular Sensitivity"],
 }
 
 # Validation rules
 PARAMETER_VALIDATION_RULES = {
+    # Rate limits in ppm
     "Lower Rate Limit": (30, 175, int),
     "Upper Rate Limit": (50, 175, int),
-    "Atrial Amplitude": (0.5, 7.0, float),
-    "Atrial Pulse Width": (0.05, 1.9, float),
-    "Ventricular Amplitude": (0.5, 7.0, float),
-    "Ventricular Pulse Width": (0.05, 1.9, float),
+
+    # Amplitude: regulated Off or 0.1 to 5.0 V (front end validates numeric range)
+    "Atrial Amplitude": (0.1, 5.0, float),
+    "Ventricular Amplitude": (0.1, 5.0, float),
+
+    # Pulse width: 1 to 30 ms
+    "Atrial Pulse Width": (1.0, 30.0, float),
+    "Ventricular Pulse Width": (1.0, 30.0, float),
+
+    # Refractory periods
     "VRP": (150, 500, int),
     "ARP": (150, 500, int),
+
+    # Sensitivity: 0 to 5 V
+    "Atrial Sensitivity": (0.0, 5.0, float),
+    "Ventricular Sensitivity": (0.0, 5.0, float),
 }
 
 
@@ -59,8 +76,10 @@ class DataEntry(ctk.CTkFrame):
             "Lower Rate Limit", "Upper Rate Limit",
             "Atrial Amplitude", "Atrial Pulse Width",
             "Ventricular Amplitude", "Ventricular Pulse Width",
-            "VRP", "ARP"
+            "VRP", "ARP",
+            "Atrial Sensitivity", "Ventricular Sensitivity",
         ]
+
 
         # Let's create all the labels and entry boxes in a loop
         for i, param_name in enumerate(param_list):
@@ -246,12 +265,18 @@ class MainFrame(ctk.CTkFrame):
         bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
         bottom_frame.pack(side="bottom", fill="x", pady=10)
 
-        ctk.CTkButton(bottom_frame, text="Connect (mock)",
+        ctk.CTkButton(bottom_frame, text="Connect",
                       width=140, command=self.controller.mock_connect).pack(side="left", padx=6)
-        ctk.CTkButton(bottom_frame, text="Switch Device (mock)",
+        ctk.CTkButton(bottom_frame, text="Switch Device",
                       width=170, command=self.controller.mock_switch_device).pack(side="left", padx=6)
-        ctk.CTkButton(bottom_frame, text="Disconnect (mock)",
+        ctk.CTkButton(bottom_frame, text="Disconnect",
                       width=160, command=self.controller.mock_disconnect).pack(side="left", padx=6)
+        ctk.CTkButton(bottom_frame, text="Verify Parameters",
+                      width=160, command=self.controller.handle_verify_parameters).pack(side="left", padx=6)
+        ctk.CTkButton(bottom_frame,text="Egram", 
+                      width=100, command=lambda: self.controller.show_frame("EgramView"),).pack(side="left", padx=6)
+
+
 
         # The logout button now lives in the bottom right
         logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
@@ -280,3 +305,108 @@ class MainFrame(ctk.CTkFrame):
             self.comm_dot.configure(text_color="#9ca3af")  # gray
             self.comm_text.configure(text="Disconnected")
             self.device_text.configure(text="")
+
+class EgramView(ctk.CTkFrame):
+    """Screen that will display egram data for atrium, ventricle, or both."""
+
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+
+        self.user_var = ctk.StringVar(value="")
+        self.device_var = ctk.StringVar(value="")
+        self.channel_var = ctk.StringVar(value="Ventricle")
+
+        # Top bar
+        top_bar = ctk.CTkFrame(self, height=40, corner_radius=0)
+        top_bar.pack(side="top", fill="x")
+
+        ctk.CTkLabel(
+            top_bar,
+            textvariable=self.user_var,
+            font=ctk.CTkFont(family="Helvetica", size=12),
+            fg_color="transparent",
+        ).pack(side="left", padx=10)
+
+        ctk.CTkLabel(
+            top_bar,
+            textvariable=self.device_var,
+            font=ctk.CTkFont(family="Helvetica", size=12),
+            fg_color="transparent",
+        ).pack(side="right", padx=10)
+
+        # Main content
+        main_content = ctk.CTkFrame(self, fg_color="transparent")
+        main_content.pack(side="top", fill="both", expand=True, padx=10, pady=10)
+
+        title_font = ctk.CTkFont(family="Helvetica", size=18, weight="bold")
+        ctk.CTkLabel(main_content, text="Egram Display", font=title_font).pack(pady=10)
+
+        control_frame = ctk.CTkFrame(main_content)
+        control_frame.pack(side="top", fill="x", pady=8)
+
+        ctk.CTkLabel(control_frame, text="Channel:").pack(side="left", padx=6)
+        ctk.CTkComboBox(
+            control_frame,
+            values=["Atrium", "Ventricle", "Both"],
+            variable=self.channel_var,
+            width=140,
+        ).pack(side="left", padx=6)
+
+        ctk.CTkButton(
+            control_frame,
+            text="Start Egram",
+            width=140,
+            command=self._start_egram,
+        ).pack(side="left", padx=6)
+
+        ctk.CTkButton(
+            control_frame,
+            text="Stop Egram",
+            width=140,
+            command=self._stop_egram,
+        ).pack(side="left", padx=6)
+
+        # Placeholder area for the waveform
+        self.display_label = ctk.CTkLabel(
+            main_content,
+            text="Egram waveform display will appear here\n(placeholder)",
+            height=300,
+            width=500,
+        )
+        self.display_label.pack(expand=True, pady=20)
+
+        bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
+        bottom_frame.pack(side="bottom", fill="x", pady=10)
+
+        ctk.CTkButton(
+            bottom_frame,
+            text="Back",
+            width=120,
+            command=lambda: self.controller.show_frame("MainFrame"),
+        ).pack(side="left", padx=10)
+
+        ctk.CTkButton(
+            bottom_frame,
+            text="Logout",
+            width=100,
+            command=self.controller.handle_logout,
+        ).pack(side="right", padx=10)
+
+    def set_user(self, username: str):
+        if username:
+            self.user_var.set(f"Logged in as: {username}")
+        else:
+            self.user_var.set("")
+
+    def set_device(self, device_id: Optional[str]):
+        if device_id:
+            self.device_var.set(f"Device: {device_id}")
+        else:
+            self.device_var.set("Device: not connected")
+
+    def _start_egram(self):
+        self.controller.start_egram(self.channel_var.get())
+
+    def _stop_egram(self):
+        self.controller.stop_egram()
