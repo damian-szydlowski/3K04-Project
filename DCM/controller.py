@@ -7,8 +7,9 @@ from models.user_model import UserModel, MAX_USERS
 from models.pacing_model import PacingModel
 
 # Views
-from views.main_view import MainFrame, DataEntry, EgramView
-from views.main_view import MainFrame, DataEntry
+from views.login_views import Welcome, Register
+from views.main_view import MainFrame, DataEntry, EgramView, AccessibilityView
+
 
 # Appearance
 ctk.set_appearance_mode("System")
@@ -36,7 +37,7 @@ class DCMApp(ctk.CTk):
         self.pacing_model = PacingModel()
         self.current_user: str | None = None
 
-        # Comms state (for 3.2.2 #4 and #7)
+        # Comms state
         self.connected: bool = False
         self.current_device_id: str | None = None
         self.last_interrogated_device_id: str | None = None
@@ -48,10 +49,13 @@ class DCMApp(ctk.CTk):
         self.container.grid_columnconfigure(0, weight=1)
 
         self.frames: Dict[str, ctk.CTkFrame] = {}
-        for F in (Welcome, Register, MainFrame, DataEntry, EgramView):
+        for F in (Welcome, Register, MainFrame, DataEntry, EgramView, AccessibilityView):
             frame = F(parent=self.container, controller=self)
             self.frames[F.__name__] = frame
             frame.grid(row=0, column=0, sticky="nsew")
+
+        self.widget_scale: float = 1.0
+        self.high_contrast: bool = False
 
         # Start on Welcome
         self.show_frame("Welcome")
@@ -95,14 +99,27 @@ class DCMApp(ctk.CTk):
         self.frames["EgramView"].set_user("")
         self.show_frame("Welcome")
 
+    def update_accessibility(self, widget_scale: float, high_contrast: bool):
+
+        self.widget_scale = widget_scale
+        self.high_contrast = high_contrast
+
+        # Scale all widgets and fonts
+        ctk.set_widget_scaling(widget_scale)
+
+        # Toggle high contrast via appearance mode
+        if high_contrast:
+            ctk.set_appearance_mode("dark")
+        else:
+            ctk.set_appearance_mode("system")
+
+
+    # ---------------- Egram ----------------
     def start_egram(self, channel: str):
         if not self.connected:
             messagebox.showerror("Error", "Not connected to a device.")
             return
 
-        # Backend will:
-        #   - Send a command to start streaming egram data.
-        #   - Read the incoming samples and update the view.
         print(f"[DEBUG] Would start egram for channel: {channel}")
         messagebox.showinfo("Egram", f"Start egram for: {channel} (front end stub).")
 
@@ -113,7 +130,6 @@ class DCMApp(ctk.CTk):
 
         print("[DEBUG] Would stop egram stream.")
         messagebox.showinfo("Egram", "Stop egram (front end stub).")
-
 
     # ---------------- Parameter entry ----------------
     def show_data_entry_page(self, mode: str):
@@ -136,31 +152,24 @@ class DCMApp(ctk.CTk):
         self.show_frame("MainFrame")
 
     def send_parameters_to_device(self, mode: str, data: Dict[str, str]):
-        "Placeholder: backend will implement building and sending the packet."
+        """Placeholder: backend will implement building and sending the packet."""
         if not self.connected:
-        # Optionally warn, but avoid blocking save
             messagebox.showwarning("Warning", "Parameters saved, but device is not connected.")
             return
 
-    # Here you will call your serial code to build and send the packet.
-    # For Deliverable 2 front end work, this stub is enough.
-    print(f"[DEBUG] Would send parameters for mode {mode}: {data}")
+        print(f"[DEBUG] Would send parameters for mode {mode}: {data}")
 
-
-    # ---------------- Comms helpers (points 4 & 7) ----------------
+    # ---------------- Comms helpers ----------------
     def _push_comm_status_to_ui(self):
-        # Update any screens that show comms (MainFrame for now)
         self.frames["MainFrame"].update_comm_status(self.connected, self.current_device_id)
         if "EgramView" in self.frames:
             self.frames["EgramView"].set_device(self.current_device_id)
 
     def _set_comm_state(self, connected: bool, device_id: str | None):
-        """Single place to change comm state and trigger UI + change detection (Point 4 and 7)."""
         self.connected = connected
         self.current_device_id = device_id if connected else None
         self._push_comm_status_to_ui()
 
-        # Point 7: different device approached than previously interrogated
         if connected:
             if self.last_interrogated_device_id is not None and device_id != self.last_interrogated_device_id:
                 messagebox.showwarning(
@@ -168,7 +177,6 @@ class DCMApp(ctk.CTk):
                     f"A different pacemaker is now in range.\n"
                     f"Previous: {self.last_interrogated_device_id}\nCurrent: {device_id}"
                 )
-            # Update the record of what we have interrogated
             self.last_interrogated_device_id = device_id
 
     # ---------------- Mock actions ----------------
@@ -188,8 +196,8 @@ class DCMApp(ctk.CTk):
         new_id = "PKM-002" if self.current_device_id != "PKM-002" else "PKM-003"
         self._set_comm_state(True, new_id)
 
+    # ---------------- Verify parameters ----------------
     def handle_verify_parameters(self):
-        """Front end entry point to verify parameters stored on the device."""
         if not self.current_user:
             messagebox.showerror("Error", "Please log in first.")
             return
@@ -205,24 +213,12 @@ class DCMApp(ctk.CTk):
             messagebox.showwarning("Verification", "Parameters on the pacemaker do not match the DCM settings.")
 
     def verify_parameters_on_device(self) -> bool:
-        """
-        Placeholder for backend verification logic.
-        Expected behavior:
-        - Read parameters back from the device over serial.
-        - Compare to self.pacing_model settings for self.current_user.
-        Return True if they match, False otherwise.
-        """
         print("[DEBUG] Would verify parameters on device here.")
-        # For now, pretend verification passes
         return True
 
-
-
-    # ---------------- Utilities for other views ----------------
+    # ---------------- Utilities ----------------
     def get_user_count(self) -> int:
         return self.user_model.get_user_count()
 
     def get_max_users(self) -> int:
         return MAX_USERS
-
-	

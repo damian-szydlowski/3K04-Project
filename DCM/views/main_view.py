@@ -276,7 +276,8 @@ class MainFrame(ctk.CTkFrame):
         ctk.CTkButton(bottom_frame,text="Egram", 
                       width=100, command=lambda: self.controller.show_frame("EgramView"),).pack(side="left", padx=6)
 
-
+        ctk.CTkButton(bottom_frame, text="Accessibility", width=140, 
+                      command=lambda: self.controller.show_frame("AccessibilityView"),).pack(side="left", padx=6)
 
         # The logout button now lives in the bottom right
         logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
@@ -410,3 +411,80 @@ class EgramView(ctk.CTkFrame):
 
     def _stop_egram(self):
         self.controller.stop_egram()
+
+class AccessibilityView(ctk.CTkFrame):
+    "Screen for basic accessibility settings: font size and high contrast."
+
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+
+        self.scale_var = ctk.DoubleVar(value=1.0)
+        self.high_contrast_var = ctk.BooleanVar(value=False)
+
+        # Main container
+        main_content = ctk.CTkFrame(self, fg_color="transparent")
+        main_content.pack(side="top", fill="both", expand=True, padx=10, pady=10)
+
+        title_font = ctk.CTkFont(family="Helvetica", size=18, weight="bold")
+        ctk.CTkLabel(main_content, text="Accessibility Settings", font=title_font).pack(pady=10)
+
+        # Font size / widget scale
+        scale_frame = ctk.CTkFrame(main_content, fg_color="transparent")
+        scale_frame.pack(fill="x", pady=8)
+
+        ctk.CTkLabel(scale_frame, text="Font and control size:").pack(side="left", padx=6)
+
+        self.scale_label = ctk.CTkLabel(scale_frame, text="100%")
+        self.scale_label.pack(side="right", padx=6)
+
+        scale_slider = ctk.CTkSlider(
+            scale_frame,
+            from_=0.8,
+            to=1.6,
+            number_of_steps=8,
+            variable=self.scale_var,
+            command=self._on_scale_change,
+            width=220,
+        )
+        scale_slider.pack(fill="x", padx=6)
+
+        # High contrast toggle
+        contrast_frame = ctk.CTkFrame(main_content, fg_color="transparent")
+        contrast_frame.pack(fill="x", pady=12)
+
+        ctk.CTkLabel(contrast_frame, text="High contrast mode:").pack(side="left", padx=6)
+
+        contrast_switch = ctk.CTkSwitch(
+            contrast_frame,
+            text="On / Off",
+            variable=self.high_contrast_var,
+            command=self._on_contrast_toggle,
+        )
+        contrast_switch.pack(side="left", padx=6)
+
+        # Bottom buttons
+        bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
+        bottom_frame.pack(side="bottom", fill="x", pady=10)
+
+        ctk.CTkButton(
+            bottom_frame,
+            text="Back",
+            width=120,
+            command=lambda: self.controller.show_frame("MainFrame"),
+        ).pack(side="left", padx=10)
+
+    def _on_scale_change(self, value: float):
+        percent = int(value * 100)
+        self.scale_label.configure(text=f"{percent}%")
+        self.controller.update_accessibility(
+            widget_scale=value,
+            high_contrast=self.high_contrast_var.get(),
+        )
+
+    def _on_contrast_toggle(self):
+        self.controller.update_accessibility(
+            widget_scale=self.scale_var.get(),
+            high_contrast=self.high_contrast_var.get(),
+        )
+

@@ -5,7 +5,7 @@ from typing import Tuple
 _CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 USER_FILE = os.path.join(_CURRENT_DIR, "users.json")
 
-MAX_USERS = 3
+MAX_USERS = 10
 
 def _load_users() -> dict:
     """Loads the user dictionary from the JSON file."""
