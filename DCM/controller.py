@@ -1,14 +1,15 @@
 import customtkinter as ctk
 from tkinter import messagebox
-from typing import Dict
+from typing import Dict, List
 
 # Data models
 from models.user_model import UserModel, MAX_USERS
 from models.pacing_model import PacingModel
+from models.serial_comms import SerialManager
 
 # Views
 from views.login_views import Welcome, Register
-from views.main_view import MainFrame, DataEntry
+from views.main_view import MainFrame, DataEntry, DebugLED
 
 # Appearance
 ctk.set_appearance_mode("System")
@@ -34,9 +35,15 @@ class DCMApp(ctk.CTk):
         # Models and session
         self.user_model = UserModel()
         self.pacing_model = PacingModel()
+        self.serial_manager = SerialManager() 
         self.current_user: str | None = None
 
-        # Comms state (for 3.2.2 #4 and #7)
+        # --- ACCESSIBILITY STATE ---
+        self.current_font_size = 14  # Default size
+        self.MIN_FONT_SIZE = 10
+        self.MAX_FONT_SIZE = 24
+
+        # Comms state
         self.connected: bool = False
         self.current_device_id: str | None = None
         self.last_interrogated_device_id: str | None = None
@@ -48,13 +55,29 @@ class DCMApp(ctk.CTk):
         self.container.grid_columnconfigure(0, weight=1)
 
         self.frames: Dict[str, ctk.CTkFrame] = {}
-        for F in (Welcome, Register, MainFrame, DataEntry):
+        for F in (Welcome, Register, MainFrame, DataEntry, DebugLED):
             frame = F(parent=self.container, controller=self)
             self.frames[F.__name__] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
-        # Start on Welcome
         self.show_frame("Welcome")
+
+    # ---------------- Accessibility ----------------
+    def increase_font_size(self):
+        if self.current_font_size < self.MAX_FONT_SIZE:
+            self.current_font_size += 2
+            self._update_views_font()
+
+    def decrease_font_size(self):
+        if self.current_font_size > self.MIN_FONT_SIZE:
+            self.current_font_size -= 2
+            self._update_views_font()
+
+    def _update_views_font(self):
+        """Notifies all views to update their widgets to the new size"""
+        for frame in self.frames.values():
+            if hasattr(frame, "update_font_size"):
+                frame.update_font_size(self.current_font_size)
 
     # ---------------- Navigation ----------------
     def show_frame(self, frame_name: str):
@@ -89,6 +112,7 @@ class DCMApp(ctk.CTk):
         self.current_user = None
         self.frames["MainFrame"].set_user("")
         self.frames["DataEntry"].set_user("")
+        self.disconnect_serial()
         self.show_frame("Welcome")
 
     # ---------------- Parameter entry ----------------
@@ -104,22 +128,56 @@ class DCMApp(ctk.CTk):
         if not self.current_user:
             messagebox.showerror("Error", "Not logged in.")
             return
+        
+        # 1. Save locally
         self.pacing_model.save_settings(self.current_user, mode, data)
         messagebox.showinfo("Success", f"{mode} settings have been saved.")
+
+        # 2. Send to Hardware
+        if self.connected:
+            self._send_settings_to_board(mode, data)
+        else:
+            messagebox.showwarning("Comm Warning", "Settings saved locally, but board is NOT connected.")
+        
         self.show_frame("MainFrame")
 
-    # ---------------- Comms helpers (points 4 & 7) ----------------
+    def _send_settings_to_board(self, mode_str: str, data: Dict[str, str]):
+        mode_map = {"AOO": 1, "VOO": 2, "AAI": 3, "VVI": 4} 
+        mode_int = mode_map.get(mode_str, 0)
+
+        try:
+            lrl = int(data.get("Lower Rate Limit", 60))
+            url = int(data.get("Upper Rate Limit", 120))
+            ampl = float(data.get("Atrial Amplitude", 0) or data.get("Ventricular Amplitude", 0))
+            width = float(data.get("Atrial Pulse Width", 0) or data.get("Ventricular Pulse Width", 0))
+
+            success = self.serial_manager.send_params(mode_int, lrl, url, ampl, width)
+            if not success:
+                messagebox.showerror("Comm Error", "Failed to send parameters to board.")
+        except ValueError:
+            messagebox.showerror("Data Error", "Invalid number format in settings.")
+
+    def send_debug_color(self, color_code: int):
+        """Sends command to light up LED if connected and verified."""
+        # --- NEW CHECK: Must be connected AND verified as FRDM-K64F ---
+        if not self.connected or self.current_device_id != "FRDM-K64F":
+            messagebox.showwarning("Access Denied", "Debug mode requires a verified FRDM-K64F connection.")
+            return
+        
+        success = self.serial_manager.send_color_command(color_code)
+        if not success:
+            messagebox.showerror("Comm Error", "Failed to send LED command.")
+
+    # ---------------- Comms helpers ----------------
     def _push_comm_status_to_ui(self):
-        # Update any screens that show comms (MainFrame for now)
-        self.frames["MainFrame"].update_comm_status(self.connected, self.current_device_id)
+        if "MainFrame" in self.frames:
+            self.frames["MainFrame"].update_comm_status(self.connected, self.current_device_id)
 
     def _set_comm_state(self, connected: bool, device_id: str | None):
-        """Single place to change comm state and trigger UI + change detection (Point 4 and 7)."""
         self.connected = connected
         self.current_device_id = device_id if connected else None
         self._push_comm_status_to_ui()
 
-        # Point 7: different device approached than previously interrogated
         if connected:
             if self.last_interrogated_device_id is not None and device_id != self.last_interrogated_device_id:
                 messagebox.showwarning(
@@ -127,31 +185,55 @@ class DCMApp(ctk.CTk):
                     f"A different pacemaker is now in range.\n"
                     f"Previous: {self.last_interrogated_device_id}\nCurrent: {device_id}"
                 )
-            # Update the record of what we have interrogated
             self.last_interrogated_device_id = device_id
 
-    # ---------------- Mock actions ----------------
-    def mock_connect(self, device_id: str = "PKM-001"):
+    # ---------------- SERIAL ACTIONS ----------------
+    
+    def get_serial_ports(self) -> List[str]:
+        return self.serial_manager.get_ports()
+
+    def connect_serial(self, port_name_display: str):
         if not self.current_user:
             messagebox.showerror("Error", "Please log in first.")
             return
-        self._set_comm_state(True, device_id)
 
-    def mock_disconnect(self):
+        # --- SAFETY CHECK ---
+        safe_keywords = ["mbed", "OpenSDA", "NXP", "DAPLink", "JLink", "Segger"]
+        
+        is_likely_safe = any(keyword.lower() in port_name_display.lower() for keyword in safe_keywords)
+
+        if not is_likely_safe:
+            # Warn the user about system ports
+            response = messagebox.askyesno(
+                "Potential Wrong Device", 
+                f"The device '{port_name_display}' does not look like a pacemaker board.\n\n"
+                "Do you want to connect anyway?"
+            )
+            if not response:
+                return # User cancelled
+
+        # Proceed to connect
+        success = self.serial_manager.connect(port_name_display)
+        
+        if success:
+            if is_likely_safe:
+                device_id = "FRDM-K64F"
+            else:
+                device_id = "Unverified Device" 
+            
+            self._set_comm_state(True, device_id)
+            messagebox.showinfo("Connected", f"Successfully connected to {port_name_display}")
+        else:
+            self._set_comm_state(False, None)
+            messagebox.showerror("Connection Failed", f"Could not open {port_name_display}")
+
+    def disconnect_serial(self):
         self._set_comm_state(False, None)
+        self.serial_manager.disconnect()
 
-    def mock_switch_device(self):
-        if not self.connected:
-            messagebox.showerror("Error", "Not connected.")
-            return
-        new_id = "PKM-002" if self.current_device_id != "PKM-002" else "PKM-003"
-        self._set_comm_state(True, new_id)
-
-    # ---------------- Utilities for other views ----------------
+    # ---------------- Utilities ----------------
     def get_user_count(self) -> int:
         return self.user_model.get_user_count()
 
     def get_max_users(self) -> int:
         return MAX_USERS
-
-	

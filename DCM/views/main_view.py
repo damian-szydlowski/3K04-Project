@@ -1,8 +1,7 @@
 import customtkinter as ctk
-from tkinter import messagebox  
-from typing import Dict 
+from tkinter import messagebox
+from typing import Dict
 
-# This map tells us which parameters are active for each pacing mode
 PARAMETER_MAP = {
     "AOO": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width"],
     "VOO": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width"],
@@ -10,7 +9,6 @@ PARAMETER_MAP = {
     "VVI": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width", "VRP"],
 }
 
-# Validation rules
 PARAMETER_VALIDATION_RULES = {
     "Lower Rate Limit": (30, 175, int),
     "Upper Rate Limit": (50, 175, int),
@@ -22,8 +20,70 @@ PARAMETER_VALIDATION_RULES = {
     "ARP": (150, 500, int),
 }
 
+# --- Shared Accessibility Helper ---
+def create_access_buttons(parent_frame, controller):
+    """Adds Font Size buttons to a frame"""
+    btn_frame = ctk.CTkFrame(parent_frame, fg_color="transparent")
+    btn_frame.pack(side="right", padx=10)
+    
+    ctk.CTkButton(btn_frame, text="A-", width=30, command=controller.decrease_font_size).pack(side="left", padx=2)
+    ctk.CTkButton(btn_frame, text="A+", width=30, command=controller.increase_font_size).pack(side="left", padx=2)
 
-# This is the screen for entering and editing pacing parameters.
+
+class DebugLED(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        
+        # Top Bar
+        top_bar = ctk.CTkFrame(self, height=40, corner_radius=0)
+        top_bar.pack(side="top", fill="x")
+        
+        self.title_label = ctk.CTkLabel(top_bar, text="Hardware Debug: LED Test", font=ctk.CTkFont(family="Helvetica", size=14, weight="bold"))
+        self.title_label.pack(side="left", padx=10)
+
+        # Accessibility
+        create_access_buttons(top_bar, controller)
+
+        # Main Content
+        main_content = ctk.CTkFrame(self, fg_color="transparent")
+        main_content.pack(side="top", fill="both", expand=True, padx=20, pady=20)
+
+        self.instr_label = ctk.CTkLabel(main_content, text="Click a color to test the FRDM-K64F RGB LED", font=ctk.CTkFont(size=16))
+        self.instr_label.pack(pady=(20, 40))
+
+        # Color Buttons
+        self.red_btn = ctk.CTkButton(main_content, text="RED", fg_color="#ef4444", hover_color="#dc2626", height=50, width=200,
+                                     command=lambda: controller.send_debug_color(1))
+        self.red_btn.pack(pady=10)
+
+        self.green_btn = ctk.CTkButton(main_content, text="GREEN", fg_color="#22c55e", hover_color="#16a34a", height=50, width=200,
+                                       command=lambda: controller.send_debug_color(2))
+        self.green_btn.pack(pady=10)
+
+        self.blue_btn = ctk.CTkButton(main_content, text="BLUE", fg_color="#3b82f6", hover_color="#2563eb", height=50, width=200,
+                                      command=lambda: controller.send_debug_color(3))
+        self.blue_btn.pack(pady=10)
+
+        self.off_btn = ctk.CTkButton(main_content, text="OFF", fg_color="gray", height=50, width=200,
+                                     command=lambda: controller.send_debug_color(0))
+        self.off_btn.pack(pady=10)
+
+        # Back Button
+        self.back_btn = ctk.CTkButton(main_content, text="Back to Main Menu", width=200, command=lambda: controller.show_frame("MainFrame"))
+        self.back_btn.pack(side="bottom", pady=40)
+
+    def update_font_size(self, size):
+        normal_font = ctk.CTkFont(family="Helvetica", size=size)
+        title_font = ctk.CTkFont(family="Helvetica", size=size+2, weight="bold")
+        
+        self.title_label.configure(font=title_font)
+        self.instr_label.configure(font=normal_font)
+        
+        for btn in [self.red_btn, self.green_btn, self.blue_btn, self.off_btn, self.back_btn]:
+            btn.configure(font=normal_font)
+
+
 class DataEntry(ctk.CTkFrame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -32,29 +92,31 @@ class DataEntry(ctk.CTkFrame):
         self.user_var = ctk.StringVar(value="")
         self.mode_var = ctk.StringVar(value="Editing Mode: N/A")
         self.current_mode = None 
-        
         self.param_widgets = {}
 
-        # This is the bar at the top showing the logged in user
+        # Top Bar
         top_bar = ctk.CTkFrame(self, height=40, corner_radius=0)
         top_bar.pack(side="top", fill="x")
         
-        user_label = ctk.CTkLabel(top_bar, textvariable=self.user_var, font=ctk.CTkFont(family="Helvetica", size=12), fg_color="transparent")
-        user_label.pack(side="left", padx=10)
+        self.user_label = ctk.CTkLabel(top_bar, textvariable=self.user_var, font=ctk.CTkFont(family="Helvetica", size=12), fg_color="transparent")
+        self.user_label.pack(side="left", padx=10)
 
-        # This is the main content area below the top bar
+        # Accessibility Buttons
+        create_access_buttons(top_bar, controller)
+
+        # Main Content
         main_content = ctk.CTkFrame(self, fg_color="transparent")
         main_content.pack(side="top", fill="both", expand=True, padx=10, pady=10)
         
-        # The title that shows which mode we're editing
+        # Title
         title_font = ctk.CTkFont(family="Helvetica", size=18, weight="bold")
-        ctk.CTkLabel(main_content, textvariable=self.mode_var, font=title_font).pack(pady=10)
+        self.title_label = ctk.CTkLabel(main_content, textvariable=self.mode_var, font=title_font)
+        self.title_label.pack(pady=10)
         
-        # A frame to hold all the parameter entry boxes
+        # Controls Frame
         controls_frame = ctk.CTkFrame(main_content)
         controls_frame.pack(fill="both", expand=True, padx=10, pady=10, ipady=10, ipadx=10)
 
-        # This is the list of all possible parameters
         param_list = [
             "Lower Rate Limit", "Upper Rate Limit",
             "Atrial Amplitude", "Atrial Pulse Width",
@@ -62,104 +124,97 @@ class DataEntry(ctk.CTkFrame):
             "VRP", "ARP"
         ]
 
-        # Let's create all the labels and entry boxes in a loop
         for i, param_name in enumerate(param_list):
-            
-            # Get the rule for this parameter
             rule = PARAMETER_VALIDATION_RULES.get(param_name)
-            label_text = f"{param_name}:" # Start with the base text
-            
+            label_text = f"{param_name}:"
             if rule:
-                # If a rule exists, add the (min-max) range to the text
                 min_val, max_val, _ = rule
                 label_text = f"{param_name}: ({min_val} - {max_val})"
             
-            # Create the label with the new text
             label = ctk.CTkLabel(controls_frame, text=label_text)
-            
             label.grid(row=i, column=0, sticky="e", padx=5, pady=5)
             
             entry = ctk.CTkEntry(controls_frame, width=200)
             entry.grid(row=i, column=1, sticky="w", padx=5, pady=5)
             
-            # Save the widgets so we can enable/disable them later
             self.param_widgets[param_name] = (label, entry)
 
-        # This frame holds the buttons at the bottom
+        # Bottom Buttons
         bottom_frame = ctk.CTkFrame(main_content, fg_color="transparent")
         bottom_frame.pack(side="bottom", fill="x", pady=10)
 
-        Back_Button = ctk.CTkButton(bottom_frame, text="Back to Mode Selection", width=180, command=lambda: controller.show_frame("MainFrame"))
-        Back_Button.pack(side="left", padx=10)
+        self.back_btn = ctk.CTkButton(bottom_frame, text="Back to Mode Selection", width=180, command=lambda: controller.show_frame("MainFrame"))
+        self.back_btn.pack(side="left", padx=10)
         
-        logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
-        logout_btn.pack(side="right", padx=10)
+        self.logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
+        self.logout_btn.pack(side="right", padx=10)
         
-        Save_Button = ctk.CTkButton(bottom_frame, text="Save Parameters", width=180, command=self._do_save)
-        Save_Button.pack(side="right", padx=10) 
+        self.save_btn = ctk.CTkButton(bottom_frame, text="Save Parameters", width=180, command=self._do_save)
+        self.save_btn.pack(side="right", padx=10) 
+
+    def update_font_size(self, size):
+        """Updates fonts dynamically"""
+        # 1. Update Labels
+        normal_font = ctk.CTkFont(family="Helvetica", size=size)
+        title_font = ctk.CTkFont(family="Helvetica", size=size+4, weight="bold")
+        
+        self.user_label.configure(font=normal_font)
+        self.title_label.configure(font=title_font)
+        
+        # 2. Update Entry Rows
+        for (label, entry) in self.param_widgets.values():
+            label.configure(font=normal_font)
+            entry.configure(font=normal_font)
+            
+        # 3. Update Buttons
+        for btn in [self.back_btn, self.logout_btn, self.save_btn]:
+            btn.configure(font=normal_font)
 
     def set_pacing_mode(self, mode: str, settings: Dict[str, str]):
-        # This function is called by the controller to set up the page
         self.current_mode = mode 
         self.mode_var.set(f"Editing Parameters for: {mode}")
         
-        # Get the list of parameters that are allowed for this mode
         active_params = PARAMETER_MAP.get(mode, [])
 
-        # Loop through all the widgets we created
         for param_name, (label, entry) in self.param_widgets.items():
-            entry.delete(0, 'end') # Clear any old value first
+            entry.delete(0, 'end') 
             
             if param_name in active_params:
-                # If it's active, turn it on and fill in the saved value
                 label.configure(state="normal")
                 entry.configure(state="normal")
                 saved_value = settings.get(param_name, "") 
                 entry.insert(0, saved_value)
             else:
-                # If it's not active, turn it off
                 label.configure(state="disabled")
                 entry.configure(state="disabled")
 
     def _do_save(self):
-        # This runs when the 'Save' button is clicked
         if not self.current_mode:
             return 
-
         data_to_save = {}
-        # Go through all widgets and get the text from the ones that are enabled
         for param_name, (label, entry) in self.param_widgets.items():
             if entry.cget("state") != "disabled":
                 value_str = entry.get()
-                
                 if not self._validate_entry(param_name, value_str):
-                    return # Stop the save if validation fails
-                
+                    return
                 data_to_save[param_name] = value_str
         
-        # If all validations passed, send the data to the controller
         self.controller.handle_save_settings(self.current_mode, data_to_save)
 
     def _validate_entry(self, name: str, value_str: str) -> bool:
-        """Checks if a single value is valid for its parameter."""
         rule = PARAMETER_VALIDATION_RULES.get(name)
         if not rule:
-            return True # No rule, so it's fine
+            return True
 
         min_val, max_val, data_type = rule
-        
         try:
             value = data_type(value_str)
         except ValueError:
-            messagebox.showerror("Invalid Input", 
-                                 f"Error in '{name}':\n\n"
-                                 f"Value must be a number.")
+            messagebox.showerror("Invalid Input", f"Error in '{name}': Value must be a number.")
             return False
 
         if not (min_val <= value <= max_val):
-            messagebox.showerror("Invalid Input", 
-                                 f"Error in '{name}':\n\n"
-                                 f"Value must be between {min_val} and {max_val}.")
+            messagebox.showerror("Invalid Input", f"Error in '{name}': Value must be between {min_val} and {max_val}.")
             return False
         
         if name == "Upper Rate Limit":
@@ -167,42 +222,39 @@ class DataEntry(ctk.CTkFrame):
                 lrl_entry = self.param_widgets["Lower Rate Limit"][1]
                 lrl_val = int(lrl_entry.get())
                 if value < lrl_val:
-                    messagebox.showerror("Invalid Input", 
-                                         "Error: 'Upper Rate Limit' cannot be less than 'Lower Rate Limit'.")
+                    messagebox.showerror("Invalid Input", "Error: 'Upper Rate Limit' cannot be less than 'Lower Rate Limit'.")
                     return False
             except Exception:
                 pass 
-        
-        return True # All checks passed
+        return True
 
     def set_user(self, username: str):
-        # Updates the user label in the top bar
         if username:
             self.user_var.set(f"Logged in as: {username}")
         else:
             self.user_var.set("")
             
     def _do_logout(self):
-        # Tells the controller to log us out
         self.controller.handle_logout()
 
 
-# This is the main menu screen where you select a pacing mode.
 class MainFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        
         self.user_var = ctk.StringVar(value="")
 
-        # The top bar showing the logged in user
+        # Top Bar
         top_bar = ctk.CTkFrame(self, height=40, corner_radius=0)
         top_bar.pack(side="top", fill="x")
         
-        user_label = ctk.CTkLabel(top_bar, textvariable=self.user_var, font=ctk.CTkFont(family="Helvetica", size=12), fg_color="transparent")
-        user_label.pack(side="left", padx=10)
+        self.user_label = ctk.CTkLabel(top_bar, textvariable=self.user_var, font=ctk.CTkFont(family="Helvetica", size=12), fg_color="transparent")
+        self.user_label.pack(side="left", padx=10)
 
-          # --- NEW: comms status row ---
+        # Accessibility Buttons
+        create_access_buttons(top_bar, controller)
+
+        # Status Row
         status_row = ctk.CTkFrame(self, height=32, corner_radius=0)
         status_row.pack(side="top", fill="x", padx=10, pady=(6, 0))
 
@@ -215,66 +267,129 @@ class MainFrame(ctk.CTkFrame):
         self.device_text = ctk.CTkLabel(status_row, text="")
         self.device_text.pack(side="left", padx=12)
 
-        # The main part of the screen
+        # Main Content
         main_content = ctk.CTkFrame(self, fg_color="transparent")
         main_content.pack(side="top", fill="both", expand=True, padx=10, pady=10)
         
-        title_font = ctk.CTkFont(family="Helvetica", size=18, weight="bold")
-        ctk.CTkLabel(main_content, text="Select Pacing Mode", font=title_font).pack(pady=20)
+        self.title_label = ctk.CTkLabel(main_content, text="Select Pacing Mode", font=ctk.CTkFont(family="Helvetica", size=18, weight="bold"))
+        self.title_label.pack(pady=20)
         
-        # A frame to hold the mode buttons
+        # Mode Buttons
         controls_frame = ctk.CTkFrame(main_content)
         controls_frame.pack(fill="y", expand=True, padx=10, pady=10)
 
-        # These buttons tell the controller to show the data entry page
-        # for a specific mode
-        AOO_Button = ctk.CTkButton(controls_frame, text="AOO", width=200, command=lambda: controller.show_data_entry_page("AOO"))
-        AOO_Button.pack(pady=10, padx=20, ipady=5)
+        self.mode_buttons = []
+        for mode in ["AOO", "VOO", "AAI", "VVI"]:
+            btn = ctk.CTkButton(controls_frame, text=mode, width=200, command=lambda m=mode: controller.show_data_entry_page(m))
+            btn.pack(pady=10, padx=20, ipady=5)
+            self.mode_buttons.append(btn)
         
-        VOO_Button = ctk.CTkButton(controls_frame, text="VOO", width=200, command=lambda: controller.show_data_entry_page("VOO"))
-        VOO_Button.pack(pady=10, padx=20, ipady=5)
-        
-        AAI_Button = ctk.CTkButton(controls_frame, text="AAI", width=200, command=lambda: controller.show_data_entry_page("AAI"))
-        AAI_Button.pack(pady=10, padx=20, ipady=5)
-        
-        VVI_Button = ctk.CTkButton(controls_frame, text="VVI", width=200, command=lambda: controller.show_data_entry_page("VVI"))
-        VVI_Button.pack(pady=11, padx=20, ipady=5)
+        # Debug Button - Initially Disabled
+        self.debug_btn = ctk.CTkButton(controls_frame, text="Hardware Debug: LED Test", 
+                                       fg_color="gray", width=200, state="disabled",
+                                       command=lambda: controller.show_frame("DebugLED"))
+        self.debug_btn.pack(pady=20, padx=20, ipady=5)
 
-        # This frame holds the button at the bottom
+        # Bottom Connection Bar
         bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
         bottom_frame.pack(side="bottom", fill="x", pady=10)
 
-        ctk.CTkButton(bottom_frame, text="Connect (mock)",
-                      width=140, command=self.controller.mock_connect).pack(side="left", padx=6)
-        ctk.CTkButton(bottom_frame, text="Switch Device (mock)",
-                      width=170, command=self.controller.mock_switch_device).pack(side="left", padx=6)
-        ctk.CTkButton(bottom_frame, text="Disconnect (mock)",
-                      width=160, command=self.controller.mock_disconnect).pack(side="left", padx=6)
+        self.port_var = ctk.StringVar(value="Select Port...")
+        self.port_dropdown = ctk.CTkComboBox(bottom_frame, variable=self.port_var, width=120)
+        self.port_dropdown.pack(side="left", padx=5)
 
-        # The logout button now lives in the bottom right
-        logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
-        logout_btn.pack(side="right", padx=10)
+        self.refresh_btn = ctk.CTkButton(bottom_frame, text="⟳", width=30, command=self.refresh_ports)
+        self.refresh_btn.pack(side="left", padx=2)
+
+        self.connect_btn = ctk.CTkButton(bottom_frame, text="Connect", fg_color="green", width=100, command=self._handle_connect)
+        self.connect_btn.pack(side="left", padx=10)
+
+        self.disconnect_btn = ctk.CTkButton(bottom_frame, text="Disconnect", fg_color="red", width=100, state="disabled", command=self._handle_disconnect)
+        self.disconnect_btn.pack(side="left", padx=5)
+
+        self.logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
+        self.logout_btn.pack(side="right", padx=10)
+        
+        self.refresh_ports()
+
+    def update_font_size(self, size):
+        """Updates fonts dynamically"""
+        normal_font = ctk.CTkFont(family="Helvetica", size=size)
+        title_font = ctk.CTkFont(family="Helvetica", size=size+4, weight="bold")
+        
+        # 1. Labels
+        self.user_label.configure(font=normal_font)
+        self.comm_text.configure(font=normal_font)
+        self.device_text.configure(font=normal_font)
+        self.title_label.configure(font=title_font)
+        
+        # 2. Mode Buttons
+        for btn in self.mode_buttons:
+            btn.configure(font=normal_font)
+        self.debug_btn.configure(font=normal_font)
+            
+        # 3. Connection Controls
+        controls = [self.port_dropdown, self.refresh_btn, self.connect_btn, self.disconnect_btn, self.logout_btn]
+        for ctrl in controls:
+            ctrl.configure(font=normal_font)
+
+    # ... existing methods (refresh_ports, handlers, etc.) ...
+    def refresh_ports(self):
+        ports = self.controller.get_serial_ports()
+        if ports:
+            self.port_dropdown.configure(values=ports)
+            self.port_dropdown.set(ports[0])
+        else:
+            self.port_dropdown.configure(values=["No Ports"])
+            self.port_dropdown.set("No Ports")
+
+    def _handle_connect(self):
+        selected_port = self.port_var.get()
+        if not selected_port or selected_port == "No Ports" or selected_port == "Select Port...":
+            messagebox.showerror("Error", "Please select a valid COM port.")
+            return
+        self.controller.connect_serial(selected_port)
+
+    def _handle_disconnect(self):
+        self.controller.disconnect_serial()
 
     def set_user(self, username: str):
-        # Updates the user label in the top bar
         if username:
             self.user_var.set(f"Logged in as: {username}")
         else:
             self.user_var.set("")
             
     def _do_logout(self):
-        # Tells the controller to log us out
         self.controller.handle_logout()
 
     def update_comm_status(self, connected: bool, device_id: str | None):
-        # Update the visual status for Point 4 and show device id.
         if connected:
-            # Green dot, connected text, and device id
-            self.comm_dot.configure(text_color="#22c55e")  # green
+            self.comm_dot.configure(text_color="#22c55e")
             self.comm_text.configure(text="Connected")
             self.device_text.configure(text=f"Device: {device_id or 'Unknown'}")
+            
+            # --- CONNECTION LOCKED ---
+            self.connect_btn.configure(state="disabled")
+            self.disconnect_btn.configure(state="normal")
+            self.port_dropdown.configure(state="disabled")
+
+            # --- DEBUG BUTTON LOGIC ---
+            # ONLY Enable if device is actually the FRDM-K64F
+            if device_id == "FRDM-K64F":
+                self.debug_btn.configure(state="normal", fg_color="#52525b")
+            else:
+                # If connected to "Unverified Device" (COM1), keep debug disabled
+                self.debug_btn.configure(state="disabled", fg_color="gray")
+            
         else:
-            # Gray dot and disconnected text
-            self.comm_dot.configure(text_color="#9ca3af")  # gray
+            self.comm_dot.configure(text_color="#9ca3af")
             self.comm_text.configure(text="Disconnected")
             self.device_text.configure(text="")
+            
+            # --- CONNECTION OPEN ---
+            self.connect_btn.configure(state="normal")
+            self.disconnect_btn.configure(state="disabled")
+            self.port_dropdown.configure(state="normal")
+
+            # --- DISABLE DEBUG ---
+            self.debug_btn.configure(state="disabled", fg_color="gray")
