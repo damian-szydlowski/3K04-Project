@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import messagebox
 from typing import Dict, List
+import pyttsx3
 
 # Data models
 from models.user_model import UserModel, MAX_USERS
@@ -61,7 +62,7 @@ class DCMApp(ctk.CTk):
             frame.grid(row=0, column=0, sticky="nsew")
 
         self.show_frame("Welcome")
-
+    
     # ---------------- Accessibility ----------------
     def increase_font_size(self):
         if self.current_font_size < self.MAX_FONT_SIZE:
@@ -222,6 +223,7 @@ class DCMApp(ctk.CTk):
                 device_id = "Unverified Device" 
             
             self._set_comm_state(True, device_id)
+            self._play_connect_sound()
             messagebox.showinfo("Connected", f"Successfully connected to {port_name_display}")
         else:
             self._set_comm_state(False, None)
@@ -237,3 +239,15 @@ class DCMApp(ctk.CTk):
 
     def get_max_users(self) -> int:
         return MAX_USERS
+    
+    def _play_connect_sound(self):
+        """Plays the connection audio in a separate thread to prevent UI freezing."""
+        def speak():
+            try:
+                engine = pyttsx3.init()
+                # Optional: Adjust rate/volume
+                engine.setProperty('rate', 150) 
+                engine.say("The bluetooth device has been connected")
+                engine.runAndWait()
+            except Exception as e:
+                print(f"Audio Error: {e}")
