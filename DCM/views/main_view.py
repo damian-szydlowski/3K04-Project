@@ -275,61 +275,57 @@ class MainFrame(ctk.CTkFrame):
         self.title_label.pack(pady=10)
         
         # --- Center Container for Buttons ---
-        # This frame centers the controls vertically and horizontally
         center_container = ctk.CTkFrame(main_content, fg_color="transparent")
         center_container.pack(expand=True, fill="both")
 
-        # Two-Column Grid Frame
+        # Two-Column Shared Grid
         self.controls_frame = ctk.CTkFrame(center_container)
-        self.controls_frame.pack(expand=True) # Center this frame in the middle of the screen
+        self.controls_frame.pack(expand=True) 
 
         # Configure columns for category split
-        self.controls_frame.grid_columnconfigure(0, weight=1)
-        self.controls_frame.grid_columnconfigure(1, weight=1)
+        self.controls_frame.grid_columnconfigure(0, weight=1, uniform="cols")
+        self.controls_frame.grid_columnconfigure(1, weight=1, uniform="cols")
 
-        # --- Atrial Column ---
-        self.atrial_frame = ctk.CTkFrame(self.controls_frame, fg_color="transparent")
-        self.atrial_frame.grid(row=0, column=0, sticky="n", padx=20, pady=10)
-        
-        self.atrial_title = ctk.CTkLabel(self.atrial_frame, text="Atrial Pacing", font=ctk.CTkFont(size=16, weight="bold"))
-        self.atrial_title.pack(pady=(0, 10))
+        # Headers
+        self.atrial_title = ctk.CTkLabel(self.controls_frame, text="Atrial Pacing", font=ctk.CTkFont(size=16, weight="bold"))
+        self.atrial_title.grid(row=0, column=0, pady=(0, 10))
 
-        # --- Ventricular Column ---
-        self.vent_frame = ctk.CTkFrame(self.controls_frame, fg_color="transparent")
-        self.vent_frame.grid(row=0, column=1, sticky="n", padx=20, pady=10)
-
-        self.vent_title = ctk.CTkLabel(self.vent_frame, text="Ventricular Pacing", font=ctk.CTkFont(size=16, weight="bold"))
-        self.vent_title.pack(pady=(0, 10))
+        self.vent_title = ctk.CTkLabel(self.controls_frame, text="Ventricular Pacing", font=ctk.CTkFont(size=16, weight="bold"))
+        self.vent_title.grid(row=0, column=1, pady=(0, 10))
 
         self.mode_buttons = []
 
-        # Helper to create styled buttons
-        def create_mode_btn(parent, mode, desc):
-            # Using \n for description line
+        # Helper to create uniformly sized buttons
+        def create_mode_btn(mode, desc, r, c):
             text_val = f"{mode}\n{desc}"
-            btn = ctk.CTkButton(parent, text=text_val, width=220, height=60,
+            btn = ctk.CTkButton(self.controls_frame, text=text_val, width=240, height=80,
                                 font=ctk.CTkFont(size=14),
                                 command=lambda m=mode: controller.show_data_entry_page(m))
-            btn.pack(pady=8)
+            # uniform="rows" enforces that ALL rows in this grid track the tallest one
+            btn.grid(row=r, column=c, padx=15, pady=10, sticky="nsew")
+            self.controls_frame.grid_rowconfigure(r, weight=1, uniform="rows")
             self.mode_buttons.append(btn)
 
-        # Atrial Buttons
-        create_mode_btn(self.atrial_frame, "AOO", "Asynchronous")
-        create_mode_btn(self.atrial_frame, "AAI", "Inhibited")
-        create_mode_btn(self.atrial_frame, "AOOR", "Rate Adaptive Async")
-        create_mode_btn(self.atrial_frame, "AAIR", "Rate Adaptive Inhibited")
+        # Atrial Column (0)
+        create_mode_btn("AOO", "Asynchronous", 1, 0)
+        create_mode_btn("AAI", "Inhibited", 2, 0)
+        create_mode_btn("AOOR", "Rate Adaptive Async", 3, 0)
+        create_mode_btn("AAIR", "Rate Adaptive Inhibited", 4, 0)
 
-        # Ventricular Buttons
-        create_mode_btn(self.vent_frame, "VOO", "Asynchronous")
-        create_mode_btn(self.vent_frame, "VVI", "Inhibited")
-        create_mode_btn(self.vent_frame, "VOOR", "Rate Adaptive Async")
-        create_mode_btn(self.vent_frame, "VVIR", "Rate Adaptive Inhibited")
+        # Ventricular Column (1)
+        create_mode_btn("VOO", "Asynchronous", 1, 1)
+        create_mode_btn("VVI", "Inhibited", 2, 1)
+        create_mode_btn("VOOR", "Rate Adaptive Async", 3, 1)
+        create_mode_btn("VVIR", "Rate Adaptive Inhibited", 4, 1)
 
         # Debug Button (Centered below columns)
+        # We put this in row 5. We allow it to be uniform or separate.
+        # Generally debug button doesn't need to match the others' height perfectly, 
+        # but if you want it to, apply uniform="rows" here too.
         self.debug_btn = ctk.CTkButton(self.controls_frame, text="Hardware Debug: LED Test", 
                                        fg_color="gray", width=460, height=40, state="disabled",
                                        command=lambda: controller.show_frame("DebugLED"))
-        self.debug_btn.grid(row=1, column=0, columnspan=2, pady=20)
+        self.debug_btn.grid(row=5, column=0, columnspan=2, pady=20)
 
 
         # Bottom Connection Bar
