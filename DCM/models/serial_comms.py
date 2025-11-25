@@ -9,8 +9,9 @@ class SerialManager:
         self.baudrate = baudrate
         self.HEADER = b'\x16'
         
-        self.CMD_SET_PARAM = b'\x55'  # Updates variables
-        self.CMD_ECHO_PARAM = b'\x22' # Triggers send_params()
+        # Commands matching your Stateflow Chart
+        self.CMD_SET_PARAM = b'\x55'  # Matches rxdata(2) == 0x55
+        self.CMD_ECHO_PARAM = b'\x22' # Matches rxdata(2) == 0x22
 
     def get_ports(self):
         ports = serial.tools.list_ports.comports()
@@ -48,100 +49,149 @@ class SerialManager:
             self.ser = None
 
     def send_params(self, mode: int, lrl: int, url: int, ampl: float, width: float):
+        """
+        Sends the new 46-byte packet matching the 'setting_parameters' chart.
+        """
         if not self.ser or not self.ser.is_open:
             return False
 
         try:
-            # Map Mode to Color Flags for the Lab
-            # Note: Due to your chart logic, Red MUST be 1 to reach Green/Blue
-            red = 1 if mode == 1 else 0
-            green = 1 if mode == 2 else 0
-            blue = 1 if mode == 3 else 0
+            # --- PREPARE DATA ---
+            # Since the GUI sends generic 'ampl' and 'width', we map them 
+            # to Atrial or Ventricular fields based on the mode.
             
-            off_time = float(lrl) / 100.0 
-            switch_time = int(width)      
+            # Mode logic: 1=AOO, 2=VOO, 3=AAI, 4=VVI (Adjust as per your definition)
+            # This ensures we don't send 0 for active chambers.
+            a_pw = int(width) if mode in [1, 3] else 0
+            v_pw = int(width) if mode in [2, 4] else 0
+            a_amp = float(ampl) if mode in [1, 3] else 0.0
+            v_amp = float(ampl) if mode in [2, 4] else 0.0
+
+            # Defaults for new parameters (not yet in GUI)
+            # You can update these as you add fields to your View.
+            a_ref = 250
+            v_ref = 320
+            delay = 0
+            a_sens = 0.0
+            v_sens = 0.0
+            recov = 0
+            resp_fact = 0
+            max_sens = 0
+            act_thresh = 0.0
+            react_time = 0
+
+            # --- PACKET STRUCTURE (46 Bytes) ---
+            # Based on Chart:
+            # 1: Header (B)
+            # 2: Cmd (B)
+            # 3-4: Mode (H - uint16)
+            # 5-6: A_Pulse_Width (H)
+            # 7-8: V_Pulse_Width (H)
+            # 9-10: LRL (H)
+            # 11-14: A_Amp (f - single)
+            # 15-18: V_Amp (f)
+            # 19-20: A_Refractory (H)
+            # 21-22: V_Refractory (H)
+            # 23-24: Delay (H)
+            # 25-28: A_Sensitivity (f)
+            # 29-32: V_Sensitivity (f)
+            # 33-34: Recover_time (H)
+            # 35-36: Response_factor (H)
+            # 37-38: Maxsensorrate (H)
+            # 39-42: Activity_threshold (f)
+            # 43-44: Reaction_time (H)
+            # 45-46: URL (H) -> Note: URL is at the very end now!
+
+            # Format String: < BB HHHH ff HHH ff HHH f H H
+            fmt = '<BBHHHHffHHHffHHfHH'
             
-            return self._send_packet(self.CMD_SET_PARAM, red, green, blue, off_time, switch_time)
+            data = struct.pack(fmt, 
+                               0x16,                # Header
+                               0x55,                # Cmd (SET)
+                               int(mode),           # Mode
+                               a_pw,                # A_PW
+                               v_pw,                # V_PW
+                               int(lrl),            # LRL
+                               float(a_amp),        # A_Amp
+                               float(v_amp),        # V_Amp
+                               int(a_ref),          # A_Ref
+                               int(v_ref),          # V_Ref
+                               int(delay),          # Delay
+                               float(a_sens),       # A_Sens
+                               float(v_sens),       # V_Sens
+                               int(recov),          # Recov
+                               int(resp_fact),      # RespFact
+                               int(max_sens),       # MaxSens
+                               float(act_thresh),   # ActThresh
+                               int(react_time),     # ReactTime
+                               int(url))            # URL (Last!)
+
+            self.ser.write(data)
+            print(f"Sent Packet ({len(data)} bytes): {data.hex().upper()}")
+            
+            # Optional Echo Request
+            time.sleep(0.1)
+            self._request_echo()
+            
+            return True
                 
         except Exception as e:
             print(f"Packing/Sending Error: {e}")
             return False
 
     def send_color_command(self, color_code: int):
+        """
+        Updated to send full 46-byte packet to keep stateflow happy,
+        mapping Color to Mode for visual debug if desired.
+        """
         if not self.ser or not self.ser.is_open:
             return False
         try:
-            red = 1 if color_code == 1 else 0
-            green = 1 if color_code == 2 else 0
-            blue = 1 if color_code == 3 else 0
+            # Sending a generic packet with just Mode set to color code
+            # This relies on your board having logic to handle this, 
+            # or just to verify connectivity.
             
-            off_time = 1.0       
-            switch_time = 500    
+            # Using defaults for everything else
+            zeros_H = 0
+            zeros_f = 0.0
             
-            return self._send_packet(self.CMD_SET_PARAM, red, green, blue, off_time, switch_time)
+            fmt = '<BBHHHHffHHHffHHfHH'
+            data = struct.pack(fmt, 0x16, 0x55, int(color_code), 0,0,0, 0.0,0.0, 0,0,0, 0.0,0.0, 0,0,0, 0.0,0, 0)
             
+            self.ser.write(data)
+            print(f"Sent LED Packet: {data.hex().upper()}")
+            return True
         except Exception as e:
             print(f"LED Error: {e}")
             return False
 
-    def _send_packet(self, cmd, red, green, blue, off_time, switch_time):
-        """
-        Helper to send the exact 11-byte packet.
-        [Header(1)] [Cmd(1)] [Red(1)] [Green(1)] [Blue(1)] [OffTime(4)] [SwitchTime(2)]
-        """
-        data = struct.pack('<BBBBBfH', 
-                           0x16, 
-                           ord(cmd), 
-                           int(red), 
-                           int(green), 
-                           int(blue), 
-                           float(off_time), 
-                           int(switch_time))
-        
-        self.ser.write(data)
-        print(f"Sent Packet ({len(data)} bytes): {data.hex().upper()}")
-        
-        # Request Echo if we just set params
-        if cmd == self.CMD_SET_PARAM:
-            # Increased delay to 0.2s to let Stateflow process the transition
-            time.sleep(0.2)
-            self._request_echo()
-            
-        return True
-
     def _request_echo(self):
         # Send Echo Request (0x22)
-        print("Sending Echo Request...")
-        # Using dummy values for the data part
-        self._send_packet(self.CMD_ECHO_PARAM, 0, 0, 0, 0.0, 0)
+        # Must match 46 bytes size
+        fmt = '<BBHHHHffHHHffHHfHH'
+        # Fill with zeros
+        data = struct.pack(fmt, 0x16, 0x22, 0,0,0,0, 0.0,0.0, 0,0,0, 0.0,0.0, 0,0,0, 0.0,0, 0)
+        
+        self.ser.write(data)
         
         response = self.read_echo()
         if response:
-            print(f"Verified! Board echoed: {response}")
+            print(f"Verified! Board echoed.")
         else:
-            print("Warning: No echo received.")
+            print("Warning: Data sent, but no echo received.")
 
     def read_echo(self):
         if not self.ser or not self.ser.is_open:
             return None
 
         try:
-            # Increased read wait time
             time.sleep(0.2) 
-            
-            waiting = self.ser.in_waiting
-            print(f"Bytes in buffer: {waiting}") # DEBUG PRINT
-            
-            if waiting >= 11: 
-                raw_data = self.ser.read(11)
-                unpacked = struct.unpack('<BBBff', raw_data)
+            if self.ser.in_waiting >= 46: 
+                raw_data = self.ser.read(46)
+                # Unpack same structure
+                fmt = '<BBHHHHffHHHffHHfHH'
+                unpacked = struct.unpack(fmt, raw_data)
                 return unpacked
-            elif waiting > 0:
-                # Read whatever is there to clear buffer and show user
-                partial = self.ser.read(waiting)
-                print(f"Partial data received: {partial.hex().upper()}")
-                return None
-            
             return None
         except Exception as e:
             print(f"Read Echo Error: {e}")
