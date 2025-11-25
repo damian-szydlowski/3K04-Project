@@ -144,15 +144,26 @@ class DCMApp(ctk.CTk):
         self.show_frame("MainFrame")
 
     def _send_settings_to_board(self, mode_str: str, data: Dict[str, str]):
-        mode_map = {"AOO": 1, "VOO": 2, "AAI": 3, "VVI": 4} 
+        mode_map = {
+            "AOO": 1, "VOO": 2, "AAI": 3, "VVI": 4,
+            "AOOR": 5, "VOOR": 6, "AAIR": 7, "VVIR": 8
+        } 
         mode_int = mode_map.get(mode_str, 0)
 
         try:
             lrl = int(data.get("Lower Rate Limit", 60))
             url = int(data.get("Upper Rate Limit", 120))
+            
+            # Handle Amplitude (A or V depending on mode)
             ampl = float(data.get("Atrial Amplitude", 0) or data.get("Ventricular Amplitude", 0))
+            
+            # Handle Pulse Width (A or V depending on mode)
             width = float(data.get("Atrial Pulse Width", 0) or data.get("Ventricular Pulse Width", 0))
 
+            # Note: You likely need to update serial_manager.send_params 
+            # to accept the new Rate Adaptive parameters (MSR, Reaction Time, etc.)
+            # For now, this sends the base parameters.
+            
             success = self.serial_manager.send_params(mode_int, lrl, url, ampl, width)
             if not success:
                 messagebox.showerror("Comm Error", "Failed to send parameters to board.")

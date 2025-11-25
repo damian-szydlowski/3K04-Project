@@ -5,19 +5,42 @@ from typing import Dict
 PARAMETER_MAP = {
     "AOO": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width"],
     "VOO": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width"],
-    "AAI": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width", "ARP"],
-    "VVI": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width", "VRP"],
+    "AAI": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "PVARP", "Hysteresis", "Rate Smoothing"],
+    "VVI": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis", "Rate Smoothing"],
+    # New Rate Adaptive Modes
+    "AOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
+    "VOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
+    "AAIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "PVARP", "Hysteresis", "Rate Smoothing", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
+    "VVIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis", "Rate Smoothing", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
 }
 
+# 2. Update Validation Rules based on Deliverable 2 & System Spec
+# Format: (Min, Max, Type)
 PARAMETER_VALIDATION_RULES = {
     "Lower Rate Limit": (30, 175, int),
     "Upper Rate Limit": (50, 175, int),
-    "Atrial Amplitude": (0.5, 7.0, float),
-    "Atrial Pulse Width": (0.05, 1.9, float),
-    "Ventricular Amplitude": (0.5, 7.0, float),
-    "Ventricular Pulse Width": (0.05, 1.9, float),
+    "Maximum Sensor Rate": (50, 175, int),
+    
+    # Updated per Deliverable 2 Table 
+    "Atrial Amplitude": (0.1, 5.0, float),
+    "Ventricular Amplitude": (0.1, 5.0, float),
+    "Atrial Pulse Width": (1, 30, int),      # Changed from float ms to int ms
+    "Ventricular Pulse Width": (1, 30, int), # Changed from float ms to int ms
+    "Atrial Sensitivity": (0, 5.0, float),
+    "Ventricular Sensitivity": (0, 5.0, float),
+
+    # Timing Cycles 
     "VRP": (150, 500, int),
     "ARP": (150, 500, int),
+    "PVARP": (150, 500, int),
+    "Hysteresis": (0, 1, int),       # Simplified flag: 0=Off, 1=On (or use ms if implementing full range)
+    "Rate Smoothing": (0, 25, int),  # % value
+
+    # Rate Adaptive Parameters 
+    "Activity Threshold": (1, 7, int), # Mapped: 1=V-Low to 7=V-High
+    "Reaction Time": (10, 50, int),    # Seconds
+    "Response Factor": (1, 16, int),
+    "Recovery Time": (2, 16, int),     # Minutes
 }
 
 # --- Shared Accessibility Helper ---
@@ -274,21 +297,32 @@ class MainFrame(ctk.CTkFrame):
         self.title_label = ctk.CTkLabel(main_content, text="Select Pacing Mode", font=ctk.CTkFont(family="Helvetica", size=18, weight="bold"))
         self.title_label.pack(pady=20)
         
-        # Mode Buttons
+        # Mode Buttons Frame
         controls_frame = ctk.CTkFrame(main_content)
         controls_frame.pack(fill="y", expand=True, padx=10, pady=10)
 
         self.mode_buttons = []
-        for mode in ["AOO", "VOO", "AAI", "VVI"]:
-            btn = ctk.CTkButton(controls_frame, text=mode, width=200, command=lambda m=mode: controller.show_data_entry_page(m))
-            btn.pack(pady=10, padx=20, ipady=5)
+        # Full list of 8 modes
+        modes = ["AOO", "VOO", "AAI", "VVI", "AOOR", "VOOR", "AAIR", "VVIR"]
+        
+        for i, mode in enumerate(modes):
+            btn = ctk.CTkButton(controls_frame, text=mode, width=200, 
+                                command=lambda m=mode: controller.show_data_entry_page(m))
+            # Grid layout (2 columns)
+            # i//2 calculates the row (0, 0, 1, 1...)
+            # i%2 calculates the column (0, 1, 0, 1...)
+            btn.grid(row=i//2, column=i%2, padx=10, pady=10) 
             self.mode_buttons.append(btn)
         
         # Debug Button - Initially Disabled
         self.debug_btn = ctk.CTkButton(controls_frame, text="Hardware Debug: LED Test", 
                                        fg_color="gray", width=200, state="disabled",
                                        command=lambda: controller.show_frame("DebugLED"))
-        self.debug_btn.pack(pady=20, padx=20, ipady=5)
+        
+        # FIX: Changed from .pack() to .grid() to match the buttons above
+        # row=4 places it below the 4 rows of mode buttons
+        # columnspan=2 centers it across the two columns
+        self.debug_btn.grid(row=4, column=0, columnspan=2, pady=20, padx=20, ipady=5)
 
         # Bottom Connection Bar
         bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
