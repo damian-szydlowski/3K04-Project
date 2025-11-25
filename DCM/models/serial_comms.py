@@ -9,7 +9,6 @@ class SerialManager:
         self.baudrate = baudrate
         self.HEADER = b'\x16'
         
-        # Commands matching your Stateflow Chart
         self.CMD_SET_PARAM = b'\x55'  # Updates variables
         self.CMD_ECHO_PARAM = b'\x22' # Triggers send_params()
 
