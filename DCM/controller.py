@@ -12,6 +12,7 @@ from models.serial_comms import SerialManager
 # Views
 from views.login_views import Welcome, Register
 from views.main_view import MainFrame, DataEntry, DebugLED
+from views.egram_view import EgramView
 
 # Appearance
 ctk.set_appearance_mode("System")
@@ -57,7 +58,7 @@ class DCMApp(ctk.CTk):
         self.container.grid_columnconfigure(0, weight=1)
 
         self.frames: Dict[str, ctk.CTkFrame] = {}
-        for F in (Welcome, Register, MainFrame, DataEntry, DebugLED):
+        for F in (Welcome, Register, MainFrame, DataEntry, DebugLED, EgramView):
             frame = F(parent=self.container, controller=self)
             self.frames[F.__name__] = frame
             frame.grid(row=0, column=0, sticky="nsew")

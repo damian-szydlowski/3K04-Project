@@ -268,21 +268,23 @@ class MainFrame(ctk.CTkFrame):
         self.device_text.pack(side="left", padx=12)
 
         # Main Content
-        main_content = ctk.CTkFrame(self, fg_color="transparent")
+        # FIX: Added corner_radius=0 to prevent Linux crash
+        main_content = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
         main_content.pack(side="top", fill="both", expand=True, padx=10, pady=10)
         
         self.title_label = ctk.CTkLabel(main_content, text="Select Pacing Mode", font=ctk.CTkFont(family="Helvetica", size=18, weight="bold"))
         self.title_label.pack(pady=10)
         
         # --- Center Container for Buttons ---
-        center_container = ctk.CTkFrame(main_content, fg_color="transparent")
+        # FIX: Added corner_radius=0
+        center_container = ctk.CTkFrame(main_content, fg_color="transparent", corner_radius=0)
         center_container.pack(expand=True, fill="both")
 
         # Two-Column Shared Grid
         self.controls_frame = ctk.CTkFrame(center_container)
         self.controls_frame.pack(expand=True) 
 
-        # Configure columns for category split
+        # Configure columns
         self.controls_frame.grid_columnconfigure(0, weight=1, uniform="cols")
         self.controls_frame.grid_columnconfigure(1, weight=1, uniform="cols")
 
@@ -301,7 +303,6 @@ class MainFrame(ctk.CTkFrame):
             btn = ctk.CTkButton(self.controls_frame, text=text_val, width=240, height=80,
                                 font=ctk.CTkFont(size=14),
                                 command=lambda m=mode: controller.show_data_entry_page(m))
-            # uniform="rows" enforces that ALL rows in this grid track the tallest one
             btn.grid(row=r, column=c, padx=15, pady=10, sticky="nsew")
             self.controls_frame.grid_rowconfigure(r, weight=1, uniform="rows")
             self.mode_buttons.append(btn)
@@ -318,18 +319,23 @@ class MainFrame(ctk.CTkFrame):
         create_mode_btn("VOOR", "Rate Adaptive Async", 3, 1)
         create_mode_btn("VVIR", "Rate Adaptive Inhibited", 4, 1)
 
-        # Debug Button (Centered below columns)
-        # We put this in row 5. We allow it to be uniform or separate.
-        # Generally debug button doesn't need to match the others' height perfectly, 
-        # but if you want it to, apply uniform="rows" here too.
+        # Debug Button
         self.debug_btn = ctk.CTkButton(self.controls_frame, text="Hardware Debug: LED Test", 
                                        fg_color="gray", width=460, height=40, state="disabled",
                                        command=lambda: controller.show_frame("DebugLED"))
         self.debug_btn.grid(row=5, column=0, columnspan=2, pady=20)
+        
+        # Egram Button
+        self.egram_btn = ctk.CTkButton(self.controls_frame, text="View Real-Time Egrams", 
+                                       fg_color="#8b5cf6", hover_color="#7c3aed",
+                                       width=460, height=40,
+                                       command=lambda: controller.show_frame("EgramView"))
+        self.egram_btn.grid(row=6, column=0, columnspan=2, pady=10)
 
 
         # Bottom Connection Bar
-        bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
+        # FIX: Added corner_radius=0
+        bottom_frame = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
         bottom_frame.pack(side="bottom", fill="x", pady=10)
 
         self.port_var = ctk.StringVar(value="Select Port...")
@@ -371,6 +377,7 @@ class MainFrame(ctk.CTkFrame):
             btn.configure(font=btn_font)
         
         self.debug_btn.configure(font=normal_font)
+        self.egram_btn.configure(font=normal_font)
             
         # Connection Controls
         controls = [self.port_dropdown, self.refresh_btn, self.connect_btn, self.disconnect_btn, self.logout_btn]
