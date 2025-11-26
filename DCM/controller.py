@@ -151,23 +151,60 @@ class DCMApp(ctk.CTk):
         } 
         mode_int = mode_map.get(mode_str, 0)
 
+        # Choose which chamber drives the generic "ampl" and "width"
+        atrial_modes = {"AOO", "AAI", "AOOR", "AAIR"}
+        if mode_str in atrial_modes:
+            ampl = amp_a
+            width = width_a
+        else:
+            ampl = amp_v
+            width = width_v
+
+
         try:
             lrl = int(data.get("Lower Rate Limit", 60))
             url = int(data.get("Upper Rate Limit", 120))
-            
-            # Handle Amplitude (A or V depending on mode)
-            ampl = float(data.get("Atrial Amplitude", 0) or data.get("Ventricular Amplitude", 0))
-            
-            # Handle Pulse Width (A or V depending on mode)
-            width = float(data.get("Atrial Pulse Width", 0) or data.get("Ventricular Pulse Width", 0))
 
-            # Note: You likely need to update serial_manager.send_params 
-            # to accept the new Rate Adaptive parameters (MSR, Reaction Time, etc.)
-            # For now, this sends the base parameters.
+            # Amplitude: handle "Off" for each chamber
+            amp_a_str = data.get("Atrial Amplitude")
+            amp_v_str = data.get("Ventricular Amplitude")
+
+            def parse_amp(s: str | None) -> float:
+                if not s:
+                    return 0.0
+                if s.strip().lower() == "off":
+                    return 0.0
+                return float(s)
+
+            amp_a = parse_amp(amp_a_str)
+            amp_v = parse_amp(amp_v_str)
+
+            # Width in ms
+            width_a_str = data.get("Atrial Pulse Width")
+            width_v_str = data.get("Ventricular Pulse Width")
+
+            width_a = float(width_a_str) if width_a_str else 0.0
+            width_v = float(width_v_str) if width_v_str else 0.0
+
+            # Sensitivity in V
+            sens_a_str = data.get("Atrial Sensitivity")
+            sens_v_str = data.get("Ventricular Sensitivity")
+
+            a_sens = float(sens_a_str) if sens_a_str else 0.0
+            v_sens = float(sens_v_str) if sens_v_str else 0.0
+
             
-            success = self.serial_manager.send_params(mode_int, lrl, url, ampl, width)
+            success = self.serial_manager.send_params(mode_int, lrl, url, ampl, width, a_sens, v_sens)
             if not success:
-                messagebox.showerror("Comm Error", "Failed to send parameters to board.")
+                messagebox.showerror(
+                    "Comm Error",
+                    "Failed to confirm that the pacemaker stored the new parameters."
+                )
+            else:
+                messagebox.showinfo(
+                    "Success",
+                    "Parameters sent and verified on the pacemaker."
+                )
         except ValueError:
             messagebox.showerror("Data Error", "Invalid number format in settings.")
 

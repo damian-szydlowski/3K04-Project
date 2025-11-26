@@ -48,7 +48,7 @@ class SerialManager:
         finally:
             self.ser = None
 
-    def send_params(self, mode: int, lrl: int, url: int, ampl: float, width: float):
+    def send_params(self, mode: int, lrl: int, url: int, ampl: float, width: float, a_sens: float = 0.0, v_sens: float = 0.0):
         """
         Sends the new 46-byte packet matching the 'setting_parameters' chart.
         """
@@ -60,20 +60,23 @@ class SerialManager:
             # Since the GUI sends generic 'ampl' and 'width', we map them 
             # to Atrial or Ventricular fields based on the mode.
             
-            # Mode logic: 1=AOO, 2=VOO, 3=AAI, 4=VVI (Adjust as per your definition)
-            # This ensures we don't send 0 for active chambers.
-            a_pw = int(width) if mode in [1, 3] else 0
-            v_pw = int(width) if mode in [2, 4] else 0
-            a_amp = float(ampl) if mode in [1, 3] else 0.0
-            v_amp = float(ampl) if mode in [2, 4] else 0.0
+            # Modes:
+            # 1 AOO, 3 AAI, 5 AOOR, 7 AAIR use atrial amplitude and pulse width
+            # 2 VOO, 4 VVI, 6 VOOR, 8 VVIR use ventricular amplitude and pulse width
+            atrial_modes = {1, 3, 5, 7}
+            ventricular_modes = {2, 4, 6, 8}
+
+            a_pw = int(width) if mode in atrial_modes else 0
+            v_pw = int(width) if mode in ventricular_modes else 0
+            a_amp = float(ampl) if mode in atrial_modes else 0.0
+            v_amp = float(ampl) if mode in ventricular_modes else 0.0
 
             # Defaults for new parameters (not yet in GUI)
             # You can update these as you add fields to your View.
             a_ref = 250
             v_ref = 320
             delay = 0
-            a_sens = 0.0
-            v_sens = 0.0
+
             recov = 0
             resp_fact = 0
             max_sens = 0
@@ -126,14 +129,31 @@ class SerialManager:
                                int(react_time),     # ReactTime
                                int(url))            # URL (Last!)
 
+            # Send packet
             self.ser.write(data)
             print(f"Sent Packet ({len(data)} bytes): {data.hex().upper()}")
-            
-            # Optional Echo Request
+
+            # Unpack what we just sent so we have a typed reference
+            expected = struct.unpack(fmt, data)
+
+            # Request echo from device
             time.sleep(0.1)
-            self._request_echo()
-            
-            return True
+            echo = self._request_echo()
+
+            if not echo:
+                print("Warning: No echo received from device.")
+                return False
+
+            # Compare all fields except header and command byte
+            if echo[2:] == expected[2:]:
+                print("Echo verification passed. Device stored parameters correctly.")
+                return True
+            else:
+                print("Echo verification FAILED.")
+                print("Expected:", expected)
+                print("Received:", echo)
+                return False
+
                 
         except Exception as e:
             print(f"Packing/Sending Error: {e}")
@@ -166,19 +186,22 @@ class SerialManager:
             return False
 
     def _request_echo(self):
-        # Send Echo Request (0x22)
-        # Must match 46 bytes size
+        """
+        Send an echo request packet and return the unpacked 46 byte response,
+        or None if no valid response is received.
+        """
+        if not self.ser or not self.ser.is_open:
+            return None
+
         fmt = '<BBHHHHffHHHffHHfHH'
-        # Fill with zeros
         data = struct.pack(fmt, 0x16, 0x22, 0,0,0,0, 0.0,0.0, 0,0,0, 0.0,0.0, 0,0,0, 0.0,0, 0)
-        
-        self.ser.write(data)
-        
-        response = self.read_echo()
-        if response:
-            print(f"Verified! Board echoed.")
-        else:
-            print("Warning: Data sent, but no echo received.")
+        try:
+            self.ser.write(data)
+        except Exception as e:
+            print(f"Echo request write error: {e}")
+            return None
+
+        return self.read_echo()
 
     def read_echo(self):
         if not self.ser or not self.ser.is_open:
@@ -196,3 +219,55 @@ class SerialManager:
         except Exception as e:
             print(f"Read Echo Error: {e}")
             return None
+        
+    def read_egram_samples(self, max_samples: int = 100):
+        """
+        Read up to max_samples Egram samples from the serial port.
+
+        Expected line format from the pacemaker:
+            t,atr,vent,marker\\n
+
+        t       float or int, time or sample index
+        atr     int or float, atrial raw value
+        vent    int or float, ventricular raw value
+        marker  string, for example "--", "VS", "VP", "()"
+        """
+        if not self.ser or not self.ser.is_open:
+            return []
+
+        samples = []
+        try:
+            while self.ser.in_waiting and len(samples) < max_samples:
+                line = self.ser.readline()
+                if not line:
+                    break
+
+                try:
+                    decoded = line.decode("ascii", errors="ignore").strip()
+                    if not decoded:
+                        continue
+
+                    parts = decoded.split(",")
+                    if len(parts) != 4:
+                        continue
+
+                    t_val = float(parts[0])
+                    atr_val = float(parts[1])
+                    vent_val = float(parts[2])
+                    marker = parts[3]
+
+                    samples.append(
+                        {
+                            "t": t_val,
+                            "atr": atr_val,
+                            "vent": vent_val,
+                            "marker": marker,
+                        }
+                    )
+                except Exception:
+                    # Ignore malformed lines and keep reading
+                    continue
+        except Exception as e:
+            print(f"Egram read error: {e}")
+
+        return samples

@@ -209,6 +209,10 @@ class DataEntry(ctk.CTkFrame):
         if not rule:
             return True
 
+        if name in ["Atrial Amplitude", "Ventricular Amplitude"]:
+            if value_str.strip().lower() == "off":
+                return True  # accept "Off" as a valid entry and treat as 0 V later
+
         min_val, max_val, data_type = rule
         try:
             value = data_type(value_str)
@@ -220,6 +224,26 @@ class DataEntry(ctk.CTkFrame):
             messagebox.showerror("Invalid Input", f"Error in '{name}': Value must be between {min_val} and {max_val}.")
             return False
         
+                
+        if name in ["Atrial Amplitude", "Ventricular Amplitude"]:
+            # step 0.1 V
+            step = 0.1
+            if abs(round(value / step) * step - value) > 1e-6:
+                messagebox.showerror("Invalid Input", f"Error in '{name}': Value must be in steps of {step} V.")
+                return False
+
+        if name in ["Atrial Sensitivity", "Ventricular Sensitivity"]:
+            # step 0.1 V
+            step = 0.1
+            if abs(round(value / step) * step - value) > 1e-6:
+                messagebox.showerror("Invalid Input", f"Error in '{name}': Value must be in steps of {step} V.")
+                return False
+
+        if name in ["Atrial Pulse Width", "Ventricular Pulse Width"]:
+            # they are ints already, so they are implicitly step 1 ms
+            pass
+
+
         if name == "Upper Rate Limit":
             try:
                 # Try to get LRL if it's active

@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 import tkinter as tk
-import math
-import random
 import time
 
 def create_access_buttons(parent_frame, controller):
@@ -22,6 +20,10 @@ class EgramView(ctk.CTkFrame):
         self.is_running = False
         self.start_time = time.time()
         self.annotations = []
+
+        # Buffer for streamed Egram samples
+        self.data = {"t": [], "atr": [], "vent": [], "markers": []}
+
 
         # --- Layout ---
         self.grid_columnconfigure(0, weight=1)
@@ -119,17 +121,19 @@ class EgramView(ctk.CTkFrame):
 
     def _start_graph(self):
         self.start_time = time.time()
-        if hasattr(self, "mock_data"):
-             self.mock_data = {"t": [], "atr": [], "vent": [], "markers": []}
+        self.data = {"t": [], "atr": [], "vent": [], "markers": []}
+
         self.line_atr.set_data([], [])
         self.line_vent.set_data([], [])
-        for txt in self.annotations: txt.remove()
+        for txt in self.annotations:
+            txt.remove()
         self.annotations.clear()
-        
+
         self.is_running = True
         self.btn_start.configure(state="disabled")
         self.btn_stop.configure(state="normal")
         self._animate()
+
 
     def _stop_graph(self):
         self.is_running = False
@@ -149,47 +153,67 @@ class EgramView(ctk.CTkFrame):
             return
 
         curr_time = time.time() - self.start_time
-        
-        # --- Mock Data ---
-        val = math.sin(curr_time * 5)
-        raw_vent = 4.5 if val > 0.9 else 2.0 + val
-        marker_vent = "VP" if val > 0.9 else "--"
 
-        raw_atr = 2.5 + random.uniform(-0.5, 0.5)
-        marker_atr = "AS" if random.random() < 0.05 else "--"
+        # Read any new Egram samples from the pacemaker
+        try:
+            samples = self.controller.serial_manager.read_egram_samples()
+        except AttributeError:
+            samples = []
 
-        if not hasattr(self, "mock_data"):
-            self.mock_data = {"t": [], "atr": [], "vent": [], "markers": []}
-        
-        if len(self.mock_data["t"]) > 500: 
-            for key in self.mock_data: self.mock_data[key].pop(0)
+        for s in samples:
+            # Use time from the device if provided, otherwise fall back to local time
+            t_val = float(s.get("t", curr_time))
+            atr_val = float(s.get("atr", 0.0))
+            vent_val = float(s.get("vent", 0.0))
+            marker = s.get("marker", "--")
 
-        self.mock_data["t"].append(curr_time)
-        self.mock_data["atr"].append(raw_atr)
-        self.mock_data["vent"].append(raw_vent)
-        if marker_atr != "--": self.mock_data["markers"].append((curr_time, raw_atr + 0.3, marker_atr, "atr"))
-        if marker_vent != "--": self.mock_data["markers"].append((curr_time, raw_vent + 0.3, marker_vent, "vent"))
+            self.data["t"].append(t_val)
+            self.data["atr"].append(atr_val)
+            self.data["vent"].append(vent_val)
+
+            if marker and marker != "--":
+                # Assume ventricular markers VS or VP belong to ventricle, others to atrium
+                chan = "vent" if marker in ("VS", "VP") else "atr"
+                y_val = vent_val if chan == "vent" else atr_val
+                self.data["markers"].append((t_val, y_val + 0.3, marker, chan))
+
+        # Limit buffer length
+        max_points = 500
+        if len(self.data["t"]) > max_points:
+            drop = len(self.data["t"]) - max_points
+            for key in self.data:
+                self.data[key] = self.data[key][drop:]
+
 
         try:
             # 1. Update Lines
-            self.line_atr.set_data(self.mock_data["t"], self.mock_data["atr"])
-            self.line_vent.set_data(self.mock_data["t"], self.mock_data["vent"])
+            self.line_atr.set_data(self.data["t"], self.data["atr"])
+            self.line_vent.set_data(self.data["t"], self.data["vent"])
 
             # 2. Update Markers
-            for txt in self.annotations: txt.remove()
+            for txt in self.annotations:
+                txt.remove()
             self.annotations.clear()
 
             visible_window = 5.0
             min_t = curr_time - visible_window
-            
-            for m_t, m_y, m_text, m_chan in self.mock_data["markers"]:
-                if m_t >= min_t: # Optimization: only draw visible markers
+
+            for m_t, m_y, m_text, m_chan in self.data["markers"]:
+                if m_t >= min_t:
                     ax = self.ax_atr if m_chan == "atr" else self.ax_vent
                     color = "red" if m_chan == "atr" else "blue"
-                    # FIX: clip_on=True ensures markers don't float outside the axes
-                    txt_obj = ax.text(m_t, m_y, m_text, fontsize=8, color=color, ha="center", 
-                                      fontweight="bold", clip_on=True)
+                    txt_obj = ax.text(
+                        m_t,
+                        m_y,
+                        m_text,
+                        fontsize=8,
+                        color=color,
+                        ha="center",
+                        fontweight="bold",
+                        clip_on=True,
+                    )
                     self.annotations.append(txt_obj)
+
 
             # 3. FIX: Lock Y-Axis Limits so dragging doesn't move the graph vertically
             self.ax_atr.set_ylim(-1.0, 6.0)
