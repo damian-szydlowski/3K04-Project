@@ -2,20 +2,20 @@ import customtkinter as ctk
 from tkinter import messagebox
 from typing import Dict
 
-# 1. Update the Parameter Map with Rate Adaptive Modes
+# 1. Update the Parameter Map (Removed Rate Smoothing & Rate Adaptive Params)
 PARAMETER_MAP = {
     "AOO": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width"],
     "VOO": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width"],
-    "AAI": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "PVARP", "Hysteresis", "Rate Smoothing"],
-    "VVI": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis", "Rate Smoothing"],
-    # New Rate Adaptive Modes
-    "AOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
-    "VOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
-    "AAIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "PVARP", "Hysteresis", "Rate Smoothing", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
-    "VVIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis", "Rate Smoothing", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
+    "AAI": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "PVARP", "Hysteresis"], 
+    "VVI": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis"], 
+    # New Rate Adaptive Modes (Simplified)
+    "AOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width"],
+    "VOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width"],
+    "AAIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "PVARP", "Hysteresis"],
+    "VVIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis"],
 }
 
-# 2. Update Validation Rules based on Deliverable 2 & System Spec
+# 2. Update Validation Rules (Removed deleted parameters)
 PARAMETER_VALIDATION_RULES = {
     "Lower Rate Limit": (30, 175, int),
     "Upper Rate Limit": (50, 175, int),
@@ -30,11 +30,6 @@ PARAMETER_VALIDATION_RULES = {
     "ARP": (150, 500, int),
     "PVARP": (150, 500, int),
     "Hysteresis": (0, 1, int),
-    "Rate Smoothing": (0, 25, int),
-    "Activity Threshold": (1, 7, int),
-    "Reaction Time": (10, 50, int),
-    "Response Factor": (1, 16, int),
-    "Recovery Time": (2, 16, int),
 }
 
 # --- Shared Accessibility Helper ---
@@ -64,18 +59,39 @@ class DebugLED(ctk.CTkFrame):
         main_content = ctk.CTkFrame(self, fg_color="transparent")
         main_content.pack(side="top", fill="both", expand=True, padx=20, pady=20)
 
-        self.instr_label = ctk.CTkLabel(main_content, text="Click a color to test the FRDM-K64F RGB LED", font=ctk.CTkFont(size=16))
-        self.instr_label.pack(pady=(20, 40))
+        self.instr_label = ctk.CTkLabel(main_content, text="Click a color to set LED (Auto-Echo enabled)", font=ctk.CTkFont(size=16))
+        self.instr_label.pack(pady=(10, 20))
 
+        # Color Buttons
         self.buttons = []
         for text, col, code in [("RED", "#ef4444", 1), ("GREEN", "#22c55e", 2), ("BLUE", "#3b82f6", 3), ("OFF", "gray", 0)]:
-            btn = ctk.CTkButton(main_content, text=text, fg_color=col, height=50, width=200,
-                                     command=lambda c=code: controller.send_debug_color(c))
-            btn.pack(pady=10)
+            btn = ctk.CTkButton(main_content, text=text, fg_color=col, height=40, width=200,
+                                     command=lambda c=code: self._set_and_echo(c))
+            btn.pack(pady=5)
             self.buttons.append(btn)
 
+        # Echo Section
+        self.echo_btn = ctk.CTkButton(main_content, text="Manual Echo (0x22)", fg_color="#8b5cf6", hover_color="#7c3aed", 
+                                 height=40, width=200,
+                                 command=self._handle_echo)
+        self.echo_btn.pack(pady=(20, 5))
+        self.buttons.append(self.echo_btn)
+
+        # Result Label
+        self.echo_label = ctk.CTkLabel(main_content, text="Echo Data: --", font=ctk.CTkFont(size=14, weight="bold"))
+        self.echo_label.pack(pady=5)
+
         self.back_btn = ctk.CTkButton(main_content, text="Back to Main Menu", width=200, command=lambda: controller.show_frame("MainFrame"))
-        self.back_btn.pack(side="bottom", pady=40)
+        self.back_btn.pack(side="bottom", pady=20)
+
+    def _set_and_echo(self, code):
+        """Sends the command, then automatically requests an echo update."""
+        self.controller.send_debug_color(code)
+        self.after(100, self._handle_echo)
+
+    def _handle_echo(self):
+        result_text = self.controller.request_echo()
+        self.echo_label.configure(text=result_text)
 
     def update_font_size(self, size):
         normal_font = ctk.CTkFont(family="Helvetica", size=size)
@@ -83,6 +99,7 @@ class DebugLED(ctk.CTkFrame):
         
         self.title_label.configure(font=title_font)
         self.instr_label.configure(font=normal_font)
+        self.echo_label.configure(font=ctk.CTkFont(family="Helvetica", size=size, weight="bold"))
         
         for btn in self.buttons + [self.back_btn]:
             btn.configure(font=normal_font)
@@ -115,17 +132,16 @@ class DataEntry(ctk.CTkFrame):
         self.title_label = ctk.CTkLabel(main_content, textvariable=self.mode_var, font=title_font)
         self.title_label.pack(pady=10)
         
-        # Scrollable Frame for many parameters
+        # Scrollable Frame
         controls_frame = ctk.CTkScrollableFrame(main_content)
         controls_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Full superset of parameters
+        # Updated param list (Removed requested parameters)
         param_list = [
             "Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate",
             "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity",
             "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity",
-            "VRP", "ARP", "PVARP", "Hysteresis", "Rate Smoothing",
-            "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"
+            "VRP", "ARP", "PVARP", "Hysteresis"
         ]
 
         for i, param_name in enumerate(param_list):
@@ -153,8 +169,11 @@ class DataEntry(ctk.CTkFrame):
         self.logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
         self.logout_btn.pack(side="right", padx=10)
         
-        self.save_btn = ctk.CTkButton(bottom_frame, text="Save Parameters", width=180, command=self._do_save)
-        self.save_btn.pack(side="right", padx=10) 
+        self.save_btn = ctk.CTkButton(bottom_frame, text="Save Parameters", width=150, command=self._do_save)
+        self.save_btn.pack(side="right", padx=5) 
+
+        self.send_btn = ctk.CTkButton(bottom_frame, text="Send to Board", width=150, fg_color="#10b981", hover_color="#059669", command=self._do_send)
+        self.send_btn.pack(side="right", padx=5)
 
     def update_font_size(self, size):
         normal_font = ctk.CTkFont(family="Helvetica", size=size)
@@ -167,7 +186,7 @@ class DataEntry(ctk.CTkFrame):
             label.configure(font=normal_font)
             entry.configure(font=normal_font)
             
-        for btn in [self.back_btn, self.logout_btn, self.save_btn]:
+        for btn in [self.back_btn, self.logout_btn, self.save_btn, self.send_btn]:
             btn.configure(font=normal_font)
 
     def set_pacing_mode(self, mode: str, settings: Dict[str, str]):
@@ -178,7 +197,6 @@ class DataEntry(ctk.CTkFrame):
 
         for param_name, (label, entry) in self.param_widgets.items():
             if param_name in active_params:
-                # Show widget
                 label.grid()
                 entry.grid()
                 entry.configure(state="normal")
@@ -186,23 +204,33 @@ class DataEntry(ctk.CTkFrame):
                 saved_value = settings.get(param_name, "") 
                 entry.insert(0, saved_value)
             else:
-                # Hide widget
                 label.grid_remove()
                 entry.grid_remove()
                 entry.configure(state="disabled")
 
-    def _do_save(self):
+    def _get_current_data(self) -> Dict[str, str] | None:
+        """Helper to validate and gather data."""
         if not self.current_mode:
-            return 
-        data_to_save = {}
+            return None
+        
+        data = {}
         for param_name, (label, entry) in self.param_widgets.items():
             if entry.cget("state") != "disabled":
                 value_str = entry.get()
                 if not self._validate_entry(param_name, value_str):
-                    return
-                data_to_save[param_name] = value_str
-        
-        self.controller.handle_save_settings(self.current_mode, data_to_save)
+                    return None
+                data[param_name] = value_str
+        return data
+
+    def _do_save(self):
+        data = self._get_current_data()
+        if data:
+            self.controller.handle_save_settings(self.current_mode, data)
+
+    def _do_send(self):
+        data = self._get_current_data()
+        if data:
+            self.controller.handle_send_parameters(self.current_mode, data)
 
     def _validate_entry(self, name: str, value_str: str) -> bool:
         rule = PARAMETER_VALIDATION_RULES.get(name)
@@ -222,7 +250,6 @@ class DataEntry(ctk.CTkFrame):
         
         if name == "Upper Rate Limit":
             try:
-                # Try to get LRL if it's active
                 if self.param_widgets["Lower Rate Limit"][1].cget("state") != "disabled":
                     lrl_val = int(self.param_widgets["Lower Rate Limit"][1].get())
                     if value < lrl_val:
@@ -267,74 +294,7 @@ class MainFrame(ctk.CTkFrame):
         self.device_text = ctk.CTkLabel(status_row, text="")
         self.device_text.pack(side="left", padx=12)
 
-        # Main Content
-        # FIX: Added corner_radius=0 to prevent Linux crash
-        main_content = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
-        main_content.pack(side="top", fill="both", expand=True, padx=10, pady=10)
-        
-        self.title_label = ctk.CTkLabel(main_content, text="Select Pacing Mode", font=ctk.CTkFont(family="Helvetica", size=18, weight="bold"))
-        self.title_label.pack(pady=10)
-        
-        # --- Center Container for Buttons ---
-        # FIX: Added corner_radius=0
-        center_container = ctk.CTkFrame(main_content, fg_color="transparent", corner_radius=0)
-        center_container.pack(expand=True, fill="both")
-
-        # Two-Column Shared Grid
-        self.controls_frame = ctk.CTkFrame(center_container)
-        self.controls_frame.pack(expand=True) 
-
-        # Configure columns
-        self.controls_frame.grid_columnconfigure(0, weight=1, uniform="cols")
-        self.controls_frame.grid_columnconfigure(1, weight=1, uniform="cols")
-
-        # Headers
-        self.atrial_title = ctk.CTkLabel(self.controls_frame, text="Atrial Pacing", font=ctk.CTkFont(size=16, weight="bold"))
-        self.atrial_title.grid(row=0, column=0, pady=(0, 10))
-
-        self.vent_title = ctk.CTkLabel(self.controls_frame, text="Ventricular Pacing", font=ctk.CTkFont(size=16, weight="bold"))
-        self.vent_title.grid(row=0, column=1, pady=(0, 10))
-
-        self.mode_buttons = []
-
-        # Helper to create uniformly sized buttons
-        def create_mode_btn(mode, desc, r, c):
-            text_val = f"{mode}\n{desc}"
-            btn = ctk.CTkButton(self.controls_frame, text=text_val, width=240, height=80,
-                                font=ctk.CTkFont(size=14),
-                                command=lambda m=mode: controller.show_data_entry_page(m))
-            btn.grid(row=r, column=c, padx=15, pady=10, sticky="nsew")
-            self.controls_frame.grid_rowconfigure(r, weight=1, uniform="rows")
-            self.mode_buttons.append(btn)
-
-        # Atrial Column (0)
-        create_mode_btn("AOO", "Asynchronous", 1, 0)
-        create_mode_btn("AAI", "Inhibited", 2, 0)
-        create_mode_btn("AOOR", "Rate Adaptive Async", 3, 0)
-        create_mode_btn("AAIR", "Rate Adaptive Inhibited", 4, 0)
-
-        # Ventricular Column (1)
-        create_mode_btn("VOO", "Asynchronous", 1, 1)
-        create_mode_btn("VVI", "Inhibited", 2, 1)
-        create_mode_btn("VOOR", "Rate Adaptive Async", 3, 1)
-        create_mode_btn("VVIR", "Rate Adaptive Inhibited", 4, 1)
-
-        # Debug Button
-        self.debug_btn = ctk.CTkButton(self.controls_frame, text="Hardware Debug: LED Test", 
-                                       fg_color="gray", width=460, height=40, state="disabled",
-                                       command=lambda: controller.show_frame("DebugLED"))
-        self.debug_btn.grid(row=5, column=0, columnspan=2, pady=20)
-        
-        # Egram Button
-        self.egram_btn = ctk.CTkButton(self.controls_frame, text="View Real-Time Egrams", 
-                                       fg_color="#8b5cf6", hover_color="#7c3aed",
-                                       width=460, height=40,
-                                       command=lambda: controller.show_frame("EgramView"))
-        self.egram_btn.grid(row=6, column=0, columnspan=2, pady=10)
-
-
         # Bottom Connection Bar
-        # FIX: Added corner_radius=0
         bottom_frame = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
         bottom_frame.pack(side="bottom", fill="x", pady=10)
 
@@ -353,38 +313,86 @@ class MainFrame(ctk.CTkFrame):
 
         self.logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
         self.logout_btn.pack(side="right", padx=10)
+
+        # Main Content
+        main_content = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
+        main_content.pack(side="top", fill="both", expand=True, padx=10, pady=10)
+        
+        self.title_label = ctk.CTkLabel(main_content, text="Select Pacing Mode", font=ctk.CTkFont(family="Helvetica", size=18, weight="bold"))
+        self.title_label.pack(pady=10)
+        
+        # Center Container
+        center_container = ctk.CTkFrame(main_content, fg_color="transparent", corner_radius=0)
+        center_container.pack(expand=True, fill="both")
+
+        self.controls_frame = ctk.CTkFrame(center_container)
+        self.controls_frame.pack(expand=True) 
+
+        self.controls_frame.grid_columnconfigure(0, weight=1, uniform="cols")
+        self.controls_frame.grid_columnconfigure(1, weight=1, uniform="cols")
+
+        self.atrial_title = ctk.CTkLabel(self.controls_frame, text="Atrial Pacing", font=ctk.CTkFont(size=16, weight="bold"))
+        self.atrial_title.grid(row=0, column=0, pady=(0, 10))
+
+        self.vent_title = ctk.CTkLabel(self.controls_frame, text="Ventricular Pacing", font=ctk.CTkFont(size=16, weight="bold"))
+        self.vent_title.grid(row=0, column=1, pady=(0, 10))
+
+        self.mode_buttons = []
+
+        def create_mode_btn(mode, desc, r, c):
+            text_val = f"{mode}\n{desc}"
+            btn = ctk.CTkButton(self.controls_frame, text=text_val, width=240, height=80,
+                                font=ctk.CTkFont(size=14),
+                                command=lambda m=mode: controller.show_data_entry_page(m))
+            btn.grid(row=r, column=c, padx=15, pady=10, sticky="nsew")
+            self.controls_frame.grid_rowconfigure(r, weight=1, uniform="rows")
+            self.mode_buttons.append(btn)
+
+        create_mode_btn("AOO", "Asynchronous", 1, 0)
+        create_mode_btn("AAI", "Inhibited", 2, 0)
+        create_mode_btn("AOOR", "Rate Adaptive Async", 3, 0)
+        create_mode_btn("AAIR", "Rate Adaptive Inhibited", 4, 0)
+
+        create_mode_btn("VOO", "Asynchronous", 1, 1)
+        create_mode_btn("VVI", "Inhibited", 2, 1)
+        create_mode_btn("VOOR", "Rate Adaptive Async", 3, 1)
+        create_mode_btn("VVIR", "Rate Adaptive Inhibited", 4, 1)
+
+        self.debug_btn = ctk.CTkButton(self.controls_frame, text="Hardware Debug: LED Test", 
+                                       fg_color="gray", width=460, height=40, state="disabled",
+                                       command=lambda: controller.show_frame("DebugLED"))
+        self.debug_btn.grid(row=5, column=0, columnspan=2, pady=20)
+        
+        self.egram_btn = ctk.CTkButton(self.controls_frame, text="View Real-Time Egrams", 
+                                       fg_color="#8b5cf6", hover_color="#7c3aed",
+                                       width=460, height=40,
+                                       command=lambda: controller.show_frame("EgramView"))
+        self.egram_btn.grid(row=6, column=0, columnspan=2, pady=10)
         
         self.refresh_ports()
 
     def update_font_size(self, size):
-        """Updates fonts dynamically"""
         normal_font = ctk.CTkFont(family="Helvetica", size=size)
         title_font = ctk.CTkFont(family="Helvetica", size=size+4, weight="bold")
         btn_font = ctk.CTkFont(family="Helvetica", size=size, weight="bold")
         
-        # Labels
         self.user_label.configure(font=normal_font)
         self.comm_text.configure(font=normal_font)
         self.device_text.configure(font=normal_font)
         self.title_label.configure(font=title_font)
-        
-        # Category Titles
         self.atrial_title.configure(font=title_font)
         self.vent_title.configure(font=title_font)
 
-        # Mode Buttons
         for btn in self.mode_buttons:
             btn.configure(font=btn_font)
         
         self.debug_btn.configure(font=normal_font)
         self.egram_btn.configure(font=normal_font)
             
-        # Connection Controls
         controls = [self.port_dropdown, self.refresh_btn, self.connect_btn, self.disconnect_btn, self.logout_btn]
         for ctrl in controls:
             ctrl.configure(font=normal_font)
 
-    # ... existing methods (refresh_ports, handlers, etc.) ...
     def refresh_ports(self):
         ports = self.controller.get_serial_ports()
         if ports:

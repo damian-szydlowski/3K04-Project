@@ -128,23 +128,46 @@ class DCMApp(ctk.CTk):
         self.show_frame("DataEntry")
 
     def handle_save_settings(self, mode: str, data: Dict[str, str]):
+        """Saves locally and sends to board."""
         if not self.current_user:
             messagebox.showerror("Error", "Not logged in.")
             return
         
         # 1. Save locally
         self.pacing_model.save_settings(self.current_user, mode, data)
-        messagebox.showinfo("Success", f"{mode} settings have been saved.")
+        msg = f"{mode} settings have been saved locally."
 
-        # 2. Send to Hardware
+        # 2. Send to Hardware (if connected)
         if self.connected:
-            self._send_settings_to_board(mode, data)
+            success = self._send_settings_to_board(mode, data)
+            if success:
+                msg += "\nAnd successfully sent to board."
+            else:
+                msg += "\nBUT failed to send to board (Comm Error)."
         else:
-            messagebox.showwarning("Comm Warning", "Settings saved locally, but board is NOT connected.")
+            msg += "\n(Board not connected, so not sent)."
         
+        messagebox.showinfo("Result", msg)
         self.show_frame("MainFrame")
 
-    def _send_settings_to_board(self, mode_str: str, data: Dict[str, str]):
+    def handle_send_parameters(self, mode: str, data: Dict[str, str]):
+        """Sends parameters to board WITHOUT saving to disk."""
+        if not self.connected:
+            messagebox.showerror("Comm Error", "Board is NOT connected. Cannot send.")
+            return
+
+        success = self._send_settings_to_board(mode, data)
+        if success:
+            messagebox.showinfo("Success", "Parameters sent to board successfully.")
+            # Optional: Return to main frame or stay? Usually stay to tweak.
+            # self.show_frame("MainFrame") 
+        else:
+            # _send_settings_to_board already shows a specific error, 
+            # but we can show a general one if needed.
+            pass
+
+    def _send_settings_to_board(self, mode_str: str, data: Dict[str, str]) -> bool:
+        """Helper to convert dict strings to commands and send."""
         mode_map = {
             "AOO": 1, "VOO": 2, "AAI": 3, "VVI": 4,
             "AOOR": 5, "VOOR": 6, "AAIR": 7, "VVIR": 8
@@ -161,19 +184,18 @@ class DCMApp(ctk.CTk):
             # Handle Pulse Width (A or V depending on mode)
             width = float(data.get("Atrial Pulse Width", 0) or data.get("Ventricular Pulse Width", 0))
 
-            # Note: You likely need to update serial_manager.send_params 
-            # to accept the new Rate Adaptive parameters (MSR, Reaction Time, etc.)
-            # For now, this sends the base parameters.
-            
             success = self.serial_manager.send_params(mode_int, lrl, url, ampl, width)
             if not success:
                 messagebox.showerror("Comm Error", "Failed to send parameters to board.")
+                return False
+            return True
+
         except ValueError:
             messagebox.showerror("Data Error", "Invalid number format in settings.")
+            return False
 
     def send_debug_color(self, color_code: int):
         """Sends command to light up LED if connected and verified."""
-        # --- NEW CHECK: Must be connected AND verified as FRDM-K64F ---
         if not self.connected or self.current_device_id != "FRDM-K64F":
             messagebox.showwarning("Access Denied", "Debug mode requires a verified FRDM-K64F connection.")
             return
@@ -181,6 +203,21 @@ class DCMApp(ctk.CTk):
         success = self.serial_manager.send_color_command(color_code)
         if not success:
             messagebox.showerror("Comm Error", "Failed to send LED command.")
+
+    def request_echo(self) -> str:
+        """
+        Requests echo from board and returns a formatted string for the UI.
+        """
+        if not self.connected:
+            return "Status: Board Not Connected"
+
+        response = self.serial_manager.get_echo()
+        
+        if response:
+            return (f"Echo: R={response['red']} G={response['green']} B={response['blue']} | "
+                    f"Switch={response['switch_time']}ms | Off={response['off_time']:.2f}s")
+        else:
+            return "Echo Failed: No Data Received"
 
     # ---------------- Comms helpers ----------------
     def _push_comm_status_to_ui(self):
@@ -217,7 +254,6 @@ class DCMApp(ctk.CTk):
         is_likely_safe = any(keyword.lower() in port_name_display.lower() for keyword in safe_keywords)
 
         if not is_likely_safe:
-            # Warn the user about system ports
             response = messagebox.askyesno(
                 "Potential Wrong Device", 
                 f"The device '{port_name_display}' does not look like a pacemaker board.\n\n"
@@ -253,16 +289,12 @@ class DCMApp(ctk.CTk):
         return MAX_USERS
     
     def _play_connect_sound(self):
-            """Plays the connection audio in a separate thread to prevent UI freezing."""
             def speak():
                 try:
                     engine = pyttsx3.init()
-                    # Optional: Adjust rate/volume
                     engine.setProperty('rate', 175) 
                     engine.say("The pacemaking device has been connected")
                     engine.runAndWait()
                 except Exception as e:
                     print(f"Audio Error: {e}")
-            
-            # Run in a thread so the GUI doesn't freeze while speaking
             threading.Thread(target=speak, daemon=True).start()
