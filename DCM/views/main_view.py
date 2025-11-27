@@ -59,14 +59,14 @@ class DebugLED(ctk.CTkFrame):
         main_content = ctk.CTkFrame(self, fg_color="transparent")
         main_content.pack(side="top", fill="both", expand=True, padx=20, pady=20)
 
-        self.instr_label = ctk.CTkLabel(main_content, text="Click a color to set LED (Auto-Echo enabled)", font=ctk.CTkFont(size=16))
+        self.instr_label = ctk.CTkLabel(main_content, text="Click a color to set LED, or Echo to read state", font=ctk.CTkFont(size=16))
         self.instr_label.pack(pady=(10, 20))
 
         # Color Buttons
         self.buttons = []
         for text, col, code in [("RED", "#ef4444", 1), ("GREEN", "#22c55e", 2), ("BLUE", "#3b82f6", 3), ("OFF", "gray", 0)]:
             btn = ctk.CTkButton(main_content, text=text, fg_color=col, height=40, width=200,
-                                     command=lambda c=code: self._set_and_echo(c))
+                                     command=lambda c=code: controller.send_debug_color(c))
             btn.pack(pady=5)
             self.buttons.append(btn)
 
@@ -83,11 +83,6 @@ class DebugLED(ctk.CTkFrame):
 
         self.back_btn = ctk.CTkButton(main_content, text="Back to Main Menu", width=200, command=lambda: controller.show_frame("MainFrame"))
         self.back_btn.pack(side="bottom", pady=20)
-
-    def _set_and_echo(self, code):
-        """Sends the command, then automatically requests an echo update."""
-        self.controller.send_debug_color(code)
-        self.after(100, self._handle_echo)
 
     def _handle_echo(self):
         result_text = self.controller.request_echo()
@@ -115,7 +110,9 @@ class DataEntry(ctk.CTkFrame):
         self.current_mode = None 
         self.param_widgets = {}
 
-        # Top Bar
+        # ------------------------------------------------------------------
+        # 1. Top Bar
+        # ------------------------------------------------------------------
         top_bar = ctk.CTkFrame(self, height=40, corner_radius=0)
         top_bar.pack(side="top", fill="x")
         
@@ -124,7 +121,30 @@ class DataEntry(ctk.CTkFrame):
 
         create_access_buttons(top_bar, controller)
 
-        # Main Content
+        # ------------------------------------------------------------------
+        # 2. Bottom Buttons
+        # ------------------------------------------------------------------
+        bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
+        bottom_frame.pack(side="bottom", fill="x", pady=10)
+
+        self.back_btn = ctk.CTkButton(bottom_frame, text="Back", width=80, command=lambda: controller.show_frame("MainFrame"))
+        self.back_btn.pack(side="left", padx=5)
+        
+        self.logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=80, command=self._do_logout)
+        self.logout_btn.pack(side="right", padx=5)
+        
+        self.save_btn = ctk.CTkButton(bottom_frame, text="Save", width=100, command=self._do_save)
+        self.save_btn.pack(side="right", padx=5) 
+
+        self.send_btn = ctk.CTkButton(bottom_frame, text="Send", width=100, fg_color="#10b981", hover_color="#059669", command=self._do_send)
+        self.send_btn.pack(side="right", padx=5)
+
+        self.verify_btn = ctk.CTkButton(bottom_frame, text="Verify Sent", width=100, fg_color="#3b82f6", hover_color="#2563eb", command=self._do_verify)
+        self.verify_btn.pack(side="right", padx=5)
+
+        # ------------------------------------------------------------------
+        # 3. Main Content
+        # ------------------------------------------------------------------
         main_content = ctk.CTkFrame(self, fg_color="transparent")
         main_content.pack(side="top", fill="both", expand=True, padx=10, pady=10)
         
@@ -132,11 +152,31 @@ class DataEntry(ctk.CTkFrame):
         self.title_label = ctk.CTkLabel(main_content, textvariable=self.mode_var, font=title_font)
         self.title_label.pack(pady=10)
         
-        # Scrollable Frame
-        controls_frame = ctk.CTkScrollableFrame(main_content)
-        controls_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        # --- Split into Left (Controls) and Right (Echo Window) ---
+        content_split = ctk.CTkFrame(main_content, fg_color="transparent")
+        content_split.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Left: Scrollable Parameters
+        controls_frame = ctk.CTkScrollableFrame(content_split, label_text="Parameters")
+        controls_frame.pack(side="left", fill="both", expand=True, padx=(0, 5))
 
-        # Updated param list (Removed requested parameters)
+        # Right: Echo Text Window (FIXED)
+        # Create a container frame for the right side
+        right_frame = ctk.CTkFrame(content_split, fg_color="transparent")
+        right_frame.pack(side="right", fill="y", padx=(5, 0))
+
+        # Add Label manually since CTkTextbox doesn't support label_text
+        self.echo_label = ctk.CTkLabel(right_frame, text="Echo Verification", font=ctk.CTkFont(size=14, weight="bold"))
+        self.echo_label.pack(side="top", pady=(0, 5), anchor="w")
+
+        # Add Textbox
+        self.echo_textbox = ctk.CTkTextbox(right_frame, width=200)
+        self.echo_textbox.pack(side="top", fill="both", expand=True)
+        
+        self.echo_textbox.insert("0.0", "Click 'Verify Sent'\nto read back parameters.")
+        self.echo_textbox.configure(state="disabled")
+
+        # Full superset of parameters
         param_list = [
             "Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate",
             "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity",
@@ -154,26 +194,20 @@ class DataEntry(ctk.CTkFrame):
             label = ctk.CTkLabel(controls_frame, text=label_text)
             label.grid(row=i, column=0, sticky="e", padx=5, pady=5)
             
-            entry = ctk.CTkEntry(controls_frame, width=200)
+            entry = ctk.CTkEntry(controls_frame, width=150)
             entry.grid(row=i, column=1, sticky="w", padx=5, pady=5)
             
             self.param_widgets[param_name] = (label, entry)
 
-        # Bottom Buttons
-        bottom_frame = ctk.CTkFrame(main_content, fg_color="transparent")
-        bottom_frame.pack(side="bottom", fill="x", pady=10)
-
-        self.back_btn = ctk.CTkButton(bottom_frame, text="Back", width=100, command=lambda: controller.show_frame("MainFrame"))
-        self.back_btn.pack(side="left", padx=10)
+    def _do_verify(self):
+        # 1. Get verification text
+        result_text = self.controller.verify_parameters()
         
-        self.logout_btn = ctk.CTkButton(bottom_frame, text="Logout", width=100, command=self._do_logout)
-        self.logout_btn.pack(side="right", padx=10)
-        
-        self.save_btn = ctk.CTkButton(bottom_frame, text="Save Parameters", width=150, command=self._do_save)
-        self.save_btn.pack(side="right", padx=5) 
-
-        self.send_btn = ctk.CTkButton(bottom_frame, text="Send to Board", width=150, fg_color="#10b981", hover_color="#059669", command=self._do_send)
-        self.send_btn.pack(side="right", padx=5)
+        # 2. Update Textbox
+        self.echo_textbox.configure(state="normal")
+        self.echo_textbox.delete("0.0", "end")
+        self.echo_textbox.insert("0.0", result_text)
+        self.echo_textbox.configure(state="disabled")
 
     def update_font_size(self, size):
         normal_font = ctk.CTkFont(family="Helvetica", size=size)
@@ -181,14 +215,17 @@ class DataEntry(ctk.CTkFrame):
         
         self.user_label.configure(font=normal_font)
         self.title_label.configure(font=title_font)
+        self.echo_label.configure(font=ctk.CTkFont(family="Helvetica", size=size, weight="bold"))
+        self.echo_textbox.configure(font=ctk.CTkFont(family="Helvetica", size=size))
         
         for (label, entry) in self.param_widgets.values():
             label.configure(font=normal_font)
             entry.configure(font=normal_font)
             
-        for btn in [self.back_btn, self.logout_btn, self.save_btn, self.send_btn]:
+        for btn in [self.back_btn, self.logout_btn, self.save_btn, self.send_btn, self.verify_btn]:
             btn.configure(font=normal_font)
 
+    # ... rest of methods (set_pacing_mode, _do_save, etc) remain unchanged ...
     def set_pacing_mode(self, mode: str, settings: Dict[str, str]):
         self.current_mode = mode 
         self.mode_var.set(f"Editing: {mode}")

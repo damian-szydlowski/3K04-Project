@@ -8,14 +8,8 @@ class SerialManager:
         self.ser = None
         self.baudrate = baudrate
         self.HEADER = b'\x16'
-        
-        # --- DEFINITIONS ---
-        # 11 Bytes for LED/Basic commands
-        # Header(1) + Cmd(1) + R(1) + G(1) + B(1) + OffTime(4) + SwitchTime(2)
         self.FMT_11_BYTES = '<BBBBBfH'
-        
-        # 46 Bytes for Cardiac Params (Future use)
-        self.FMT_46_BYTES = '<BBHHHHffHHHffHHfHHH' 
+        self.FMT_18_BYTES = '<BBBBBBBBBBBBBBBBBB' 
 
     def get_ports(self):
         ports = serial.tools.list_ports.comports()
@@ -26,7 +20,7 @@ class SerialManager:
         try:
             if self.ser and self.ser.is_open:
                 self.ser.close()
-            self.ser = serial.Serial(actual_port, self.baudrate, timeout=1)
+            self.ser = serial.Serial(actual_port, self.baudrate, timeout=1) # 1s timeout
             self.ser.reset_input_buffer()
             return True
         except serial.SerialException as e:
@@ -39,109 +33,100 @@ class SerialManager:
             self.ser = None
 
     def send_color_command(self, color_code: int):
-        """Sends the SET_PARAM packet (Cmd 0x55)."""
-        if not self.ser or not self.ser.is_open:
-            return False
+        if not self.ser or not self.ser.is_open: return False
         try:
-            red = 1 if color_code == 1 else 0
-            green = 1 if color_code == 2 else 0
-            blue = 1 if color_code == 3 else 0
-            # Default values for testing
-            off_time = 0.5 
-            switch_time = 200
-
-            # Cmd 0x55 triggers SET_PARAM state in your diagram
-            data = struct.pack(self.FMT_11_BYTES, 
-                               0x16, 0x55, red, green, blue, off_time, switch_time)
-            
+            data = struct.pack(self.FMT_11_BYTES, 0x16, 0x55, 
+                               1 if color_code==1 else 0, 
+                               1 if color_code==2 else 0, 
+                               1 if color_code==3 else 0, 0.5, 200)
             self.ser.write(data)
             return True
-        except Exception as e:
-            print(f"LED Error: {e}")
-            return False
+        except Exception: return False
 
     def get_echo(self):
+        """Old LED Echo"""
+        if not self.ser or not self.ser.is_open: return None
+        try:
+            self.ser.reset_input_buffer()
+            self.ser.write(struct.pack(self.FMT_11_BYTES, 0x16, 0x22, 0,0,0,0.0,0))
+            resp = self.ser.read(9)
+            if len(resp) != 9: return None
+            return struct.unpack('<BBBHf', resp)
+        except Exception: return None
+
+    def get_cardiac_echo(self):
         """
-        Sends ECHO_PARAM command (0x22) and reads back 9 bytes.
-        Returns: Dict of values or None if failed.
+        Sends 18 bytes (Header+Cmd+Zeros) to trigger Echo.
+        Expects 16 bytes back based on image_da8144.png.
         """
         if not self.ser or not self.ser.is_open:
-            return None
+            return {"error": "Not Connected"}
 
         try:
-            # 1. Send Request: Cmd 0x22 triggers ECHO_PARAM state.
-            # We still send 11 bytes because the board's receive logic likely expects a full packet.
-            req_data = struct.pack(self.FMT_11_BYTES, 
-                                   0x16, 0x22, 0, 0, 0, 0.0, 0)
-            self.ser.reset_input_buffer() 
+            # 1. Clear buffer to ensure we don't read old data
+            self.ser.reset_input_buffer()
+
+            # 2. Send Trigger: 0x16, 0x22, + 16 zeros (18 bytes total)
+            req_data = struct.pack(self.FMT_18_BYTES, 0x16, 0x22, *([0]*16))
             self.ser.write(req_data)
 
-            # 2. Read Response: Expecting 9 bytes back (No Header, No Cmd)
-            # Structure from Mux in Simulink: Red(1), Green(1), Blue(1), SwitchTime(2), OffTime(4)
-            response = self.ser.read(9)
+            # 3. Read Response: Expecting 16 bytes
+            response = self.ser.read(16)
             
-            if len(response) != 9:
-                print(f"Echo Error: Received {len(response)} bytes, expected 9.")
-                return None
+            # Diagnostic: If length is wrong, return the error to display in GUI
+            if len(response) != 16:
+                return {"error": f"Timeout/Partial Data.\nRx: {len(response)} bytes\nEx: 16 bytes"}
 
-            # 3. Unpack
-            # < = Little Endian
-            # B = uchar (1 byte) x3
-            # H = ushort (2 bytes) -> Switch Time
-            # f = float (4 bytes) -> Off Time
-            unpacked = struct.unpack('<BBBHf', response)
+            # 4. Unpack 16 bytes (Top to Bottom from image_da8144.png)
+            u = struct.unpack('<BBBBBBBBBBBBBBBB', response)
             
             return {
-                "red": unpacked[0],
-                "green": unpacked[1],
-                "blue": unpacked[2],
-                "switch_time": unpacked[3],
-                "off_time": unpacked[4]
+                "mode": u[0],              # 1
+                "resp_fact": u[1],         # 2
+                "recov": u[2],             # 3
+                "react": u[3],             # 4
+                "msr": u[4],               # 5
+                "lrl": u[5],               # 6
+                "act_thresh": u[6],        # 7
+                "v_sens": u[7] / 10.0,     # 8
+                "v_ref": u[8] * 10,        # 9
+                "v_pw": u[9],              # 10
+                "v_amp": u[10] / 10.0,     # 11
+                "a_sens": u[11] / 10.0,    # 12
+                "a_ref": u[12] * 10,       # 13
+                "a_pw": u[13],             # 14
+                "a_amp": u[14] / 10.0,     # 15
+                "hyst": u[15]              # 16
             }
 
         except Exception as e:
-            print(f"Echo Comm Error: {e}")
-            return None
+            return {"error": f"Comm Error:\n{str(e)}"}
 
-    def send_params(self, mode: int, lrl: int, url: int, ampl: float, width: float):
-        """
-        FUTURE FEATURE: Sends 46 bytes.
-        WARNING: Do not use this if the board expects 11 bytes. It will desync the UART.
-        """
-        if not self.ser or not self.ser.is_open:
-            return False
-
+    def send_params(self, params: dict):
+        """Sends 18 bytes based on image_db0126.png (Input Order)"""
+        if not self.ser or not self.ser.is_open: return False
         try:
-            # Logic to map GUI inputs to struct fields
-            a_pw = int(width) if mode in [1, 3] else 0
-            v_pw = int(width) if mode in [2, 4] else 0
-            a_amp = float(ampl) if mode in [1, 3] else 0.0
-            v_amp = float(ampl) if mode in [2, 4] else 0.0
-
-            # Defaults
-            a_ref, v_ref, delay = 250, 320, 0
-            a_sens, v_sens = 0.0, 0.0
-            recov, resp_fact, max_sens = 0, 0, 0
-            act_thresh, react_time = 0.0, 0
-
-            # Pack 46 bytes - Now using the corrected 19-item format string
-            data = struct.pack(self.FMT_46_BYTES, 
+            # Map params using Image 1 Input Order
+            data = struct.pack(self.FMT_18_BYTES, 
                                0x16, 0x55, 
-                               int(mode), a_pw, v_pw, int(lrl),
-                               float(a_amp), float(v_amp),
-                               int(a_ref), int(v_ref), int(delay),
-                               float(a_sens), float(v_sens),
-                               int(recov), int(resp_fact), int(max_sens),
-                               float(act_thresh), int(react_time),
-                               int(url)) # <--- This was the 19th item missing in your format string
-
+                               int(params.get("mode", 0)),
+                               int(params.get("a_pw", 0)),
+                               int(params.get("v_pw", 0)),
+                               int(params.get("lrl", 60)),
+                               int(params.get("a_amp", 0) * 10),
+                               int(params.get("v_amp", 0) * 10),
+                               int(params.get("a_ref", 0) / 10),
+                               int(params.get("v_ref", 0) / 10),
+                               int(params.get("a_sens", 0) * 10),
+                               int(params.get("v_sens", 0) * 10),
+                               int(params.get("recov", 0)),
+                               int(params.get("resp_fact", 0)),
+                               int(params.get("msr", 0)),
+                               int(params.get("act_thresh", 0)),
+                               int(params.get("react_time", 0)),
+                               int(params.get("hyst", 0)))
             self.ser.write(data)
-            print(f"Sent Param Packet (46 bytes): {data.hex().upper()}")
             return True
-
-        except struct.error as e:
-            print(f"Struct Error (Check format string vs arguments): {e}")
-            return False
         except Exception as e:
-            print(f"Param Send Error: {e}")
+            print(f"Send Error: {e}")
             return False

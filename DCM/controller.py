@@ -159,32 +159,43 @@ class DCMApp(ctk.CTk):
         success = self._send_settings_to_board(mode, data)
         if success:
             messagebox.showinfo("Success", "Parameters sent to board successfully.")
-            # Optional: Return to main frame or stay? Usually stay to tweak.
-            # self.show_frame("MainFrame") 
         else:
-            # _send_settings_to_board already shows a specific error, 
-            # but we can show a general one if needed.
+            # _send_settings_to_board already shows a specific error
             pass
 
     def _send_settings_to_board(self, mode_str: str, data: Dict[str, str]) -> bool:
         """Helper to convert dict strings to commands and send."""
+        # Mode Mapping
         mode_map = {
-            "AOO": 1, "VOO": 2, "AAI": 3, "VVI": 4,
-            "AOOR": 5, "VOOR": 6, "AAIR": 7, "VVIR": 8
+            "AOO": 0, "VOO": 1, "AAI": 2, "VVI": 3,
+            "AOOR": 4, "VOOR": 5, "AAIR": 6, "VVIR": 7
         } 
         mode_int = mode_map.get(mode_str, 0)
 
         try:
-            lrl = int(data.get("Lower Rate Limit", 60))
-            url = int(data.get("Upper Rate Limit", 120))
-            
-            # Handle Amplitude (A or V depending on mode)
-            ampl = float(data.get("Atrial Amplitude", 0) or data.get("Ventricular Amplitude", 0))
-            
-            # Handle Pulse Width (A or V depending on mode)
-            width = float(data.get("Atrial Pulse Width", 0) or data.get("Ventricular Pulse Width", 0))
+            # Gather parameters, defaulting to 0 if not present
+            params = {
+                "mode": mode_int,
+                "lrl": int(data.get("Lower Rate Limit", 60)),
+                "msr": int(data.get("Maximum Sensor Rate", 120)),
+                "a_amp": float(data.get("Atrial Amplitude", 0)),
+                "v_amp": float(data.get("Ventricular Amplitude", 0)),
+                "a_pw": int(data.get("Atrial Pulse Width", 0)),
+                "v_pw": int(data.get("Ventricular Pulse Width", 0)),
+                "a_sens": float(data.get("Atrial Sensitivity", 0)),
+                "v_sens": float(data.get("Ventricular Sensitivity", 0)),
+                "a_ref": int(data.get("ARP", 0) or data.get("PVARP", 0)), # Use ARP or PVARP
+                "v_ref": int(data.get("VRP", 0)),
+                "hyst": int(data.get("Hysteresis", 0)),
+                # These were removed from GUI, send 0 as default
+                "recov": 0,
+                "resp_fact": 0,
+                "act_thresh": 0,
+                "react_time": 0
+            }
 
-            success = self.serial_manager.send_params(mode_int, lrl, url, ampl, width)
+            success = self.serial_manager.send_params(params)
+            
             if not success:
                 messagebox.showerror("Comm Error", "Failed to send parameters to board.")
                 return False
@@ -206,7 +217,7 @@ class DCMApp(ctk.CTk):
 
     def request_echo(self) -> str:
         """
-        Requests echo from board and returns a formatted string for the UI.
+        Requests LED echo from board and returns a formatted string.
         """
         if not self.connected:
             return "Status: Board Not Connected"
@@ -218,6 +229,36 @@ class DCMApp(ctk.CTk):
                     f"Switch={response['switch_time']}ms | Off={response['off_time']:.2f}s")
         else:
             return "Echo Failed: No Data Received"
+
+    # --- THIS WAS MISSING OR BROKEN ---
+    def verify_parameters(self) -> str:
+        """Requests cardiac parameters from board and returns formatted string."""
+        if not self.connected:
+            return "Error: Board is NOT connected."
+
+        data = self.serial_manager.get_cardiac_echo()
+        
+        if data is None:
+            return "Verification Failed:\nNo data received (Timeout)."
+
+        # Check for error key from SerialManager
+        if "error" in data:
+            return f"Verification Failed:\n{data['error']}"
+
+        # If success, format the data
+        return (f"--- Board Echo ---\n"
+                f"Mode: {data['mode']}\n"
+                f"LRL:  {data['lrl']} ppm\n"
+                f"MSR:  {data['msr']} ppm\n"
+                f"A-Amp: {data['a_amp']:.1f} V\n"
+                f"V-Amp: {data['v_amp']:.1f} V\n"
+                f"A-PW:  {data['a_pw']} ms\n"
+                f"V-PW:  {data['v_pw']} ms\n"
+                f"A-Sens: {data['a_sens']:.1f} mV\n"
+                f"V-Sens: {data['v_sens']:.1f} mV\n"
+                f"ARP:   {data['a_ref']} ms\n"
+                f"VRP:   {data['v_ref']} ms\n"
+                f"Hyst:  {data['hyst']}\n")
 
     # ---------------- Comms helpers ----------------
     def _push_comm_status_to_ui(self):
