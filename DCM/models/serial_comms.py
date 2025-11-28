@@ -97,25 +97,24 @@ class SerialManager:
             return {"error": f"Comm Error:\n{str(e)}"}
 
     def start_egram_stream(self):
-        """Sends 18 bytes: 16 (Head), 51 (Code), + 16 Zeros."""
+        """Sends 16 bytes: 16 (Head), 51 (Code), + 14 Zeros."""
         if not self.ser or not self.ser.is_open: return False
         try:
             self.ser.reset_input_buffer()
-            # < = Little Endian, B = UChar, 16x = 16 Pad Bytes
-            # 2 bytes (Head+Code) + 16 bytes (Pad) = 18 Bytes
-            self.ser.write(struct.pack('<BB16x', 0x16, 0x33)) 
-            print("[Serial] Sent Start Egram (18 bytes)")
+            # 2 bytes command + 14 bytes pad = 16 Bytes Total
+            self.ser.write(struct.pack('<BB14x', 0x16, 0x33)) 
+            print("[Serial] Sent Start Egram (16 bytes)")
             return True
         except Exception as e: 
             print(f"[Serial] Error starting stream: {e}")
             return False
 
     def stop_egram_stream(self):
-        """Sends 18 bytes: 16 (Head), 52 (Code), + 16 Zeros."""
+        """Sends 16 bytes: 16 (Head), 52 (Code), + 14 Zeros."""
         if not self.ser or not self.ser.is_open: return False
         try:
-            self.ser.write(struct.pack('<BB16x', 0x16, 0x34))
-            print("[Serial] Sent Stop Egram (18 bytes)")
+            self.ser.write(struct.pack('<BB14x', 0x16, 0x34))
+            print("[Serial] Sent Stop Egram (16 bytes)")
             return True
         except Exception as e:
             print(f"[Serial] Error stopping stream: {e}")
@@ -123,25 +122,40 @@ class SerialManager:
 
     def read_egram_sample(self):
         """
-        Reads 16 bytes total.
-        Bytes 0-7: Padding (Skipped)
-        Bytes 8-11: Atrial Float
-        Bytes 12-15: Ventricular Float
-        Returns (atr, vent).
+        SYNC READ (16 Bytes Total):
+        1. Reads until Header (0x01) is found.
+        2. Reads next 15 bytes.
+        Structure: [01] [7 Pad] [4 Atr] [4 Vent]
         """
         if not self.ser or not self.ser.is_open: return None
         
-        # Waiting for 16 bytes (8 padding + 8 data)
+        # Need at least 16 bytes
         if self.ser.in_waiting < 16: return None
 
         try:
-            packet = self.ser.read(16)
-            if len(packet) != 16: return None
+            # --- SYNC LOOP ---
+            while True:
+                if self.ser.in_waiting < 16: return None
+                
+                header = self.ser.read(1)
+                
+                if header == b'\x01':
+                    # Found header, read rest of packet (15 bytes)
+                    payload = self.ser.read(15)
+                    break
             
-            # Unpack: 8x (skip 8 bytes), then 2 floats (f, f)
-            val_atr, val_vent = struct.unpack('<8xff', packet)
+            # --- DEBUG: Print Raw Hex ---
+            total_packet = header + payload
+            print(f"[Raw] {total_packet.hex().upper()}")
+
+            # Unpack Payload (15 bytes):
+            # 7x = Skip 7 bytes (Padding)
+            # f  = Float (Atrial)
+            # f  = Float (Ventricular)
+            val_atr, val_vent = struct.unpack('<7xff', payload)
             
             return (val_atr, val_vent)
+
         except Exception as e:
             print(f"[Serial] Egram read error: {e}")
             return None

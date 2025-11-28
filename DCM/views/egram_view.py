@@ -69,8 +69,8 @@ class EgramView(ctk.CTkFrame):
         self._style_plot(self.ax_vent, "Ventricle")
         
         # Initialize Plot Lines (Both active)
-        self.line_atr, = self.ax_atr.plot(np.arange(self.data_size), self.atr_data, color="orange", linewidth=1.5)
-        self.line_vent, = self.ax_vent.plot(np.arange(self.data_size), self.vent_data, color="cyan", linewidth=1.5)
+        self.line_atr, = self.ax_atr.plot(np.arange(self.data_size), self.atr_data, color="orange", linewidth=1.5, animated=True)
+        self.line_vent, = self.ax_vent.plot(np.arange(self.data_size), self.vent_data, color="cyan", linewidth=1.5, animated=True)
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=graph_container)
         self.canvas.draw()
@@ -87,6 +87,10 @@ class EgramView(ctk.CTkFrame):
 
         self.back_btn = ctk.CTkButton(bottom_frame, text="Back to Main Menu", width=200, command=self._go_back)
         self.back_btn.pack(side="bottom")
+        
+        # Backgrounds for Blitting
+        self.bg_atr = None
+        self.bg_vent = None
 
     def _style_plot(self, ax, title):
         ax.set_title(title, fontsize=10, color="#333", fontweight="bold")
@@ -122,6 +126,13 @@ class EgramView(ctk.CTkFrame):
         self.vent_data = np.zeros(self.data_size)
         self.line_atr.set_ydata(self.atr_data)
         self.line_vent.set_ydata(self.vent_data)
+        
+        # --- BLITTING SETUP ---
+        # Draw once to render background
+        self.canvas.draw()
+        # Save background (everything except the lines)
+        self.bg_atr = self.canvas.copy_from_bbox(self.ax_atr.bbox)
+        self.bg_vent = self.canvas.copy_from_bbox(self.ax_vent.bbox)
         
         self.is_running = True
         self.btn_start.configure(state="disabled")
@@ -164,16 +175,28 @@ class EgramView(ctk.CTkFrame):
             # Unpack
             new_atr, new_vent = new_sample
             
-            # --- Update Atrial Buffer ---
+            # --- Update Buffers (Rolling) ---
             self.atr_data[:-1] = self.atr_data[1:]
             self.atr_data[-1] = new_atr
             self.line_atr.set_ydata(self.atr_data)
 
-            # --- Update Ventricular Buffer ---
             self.vent_data[:-1] = self.vent_data[1:]
             self.vent_data[-1] = new_vent
             self.line_vent.set_ydata(self.vent_data)
             
-            self.canvas.draw()
+            # --- FAST REDRAW (BLITTING) ---
+            # 1. Restore Background (clears old lines)
+            self.canvas.restore_region(self.bg_atr)
+            self.canvas.restore_region(self.bg_vent)
+            
+            # 2. Draw only the lines
+            self.ax_atr.draw_artist(self.line_atr)
+            self.ax_vent.draw_artist(self.line_vent)
+            
+            # 3. Blit (update screen)
+            self.canvas.blit(self.ax_atr.bbox)
+            self.canvas.blit(self.ax_vent.bbox)
+            
+            # Note: No canvas.draw() here! It kills performance.
         
         self.after(20, self._animate)
