@@ -136,43 +136,98 @@ class SerialManager:
         """
         Try to read one egram sample from the UART.
 
-        Packet while streaming:
-          bytes 0-1: m_vraw, little endian, signed
-          bytes 2-3: f_marker, two ASCII characters
+        New packet format (4 bytes total, little endian):
+          [0:2]  low  16 bits  -> marker (uint16)
+          [2:4]  high 16 bits  -> raw mV value (0..5000) as uint16
 
-        Returns (raw_value, marker_str) or None if no full frame is available.
+        Returns (raw_mV, marker_str) or None if no full frame is available.
         """
         if not self.ser or not self.ser.is_open:
             print("[Serial] read_egram_sample called but serial is not open")
             return None
 
         if self.ser.in_waiting < self.EGRAM_FRAME_SIZE:
-            # print(f"[Serial] in_waiting={self.ser.in_waiting}, not enough for frame")
             return None
 
         try:
             frame = self.ser.read(self.EGRAM_FRAME_SIZE)
-            print(f"[Serial] Raw frame bytes: {frame.hex(' ')}")  # debug
+            print(f"[Serial] Raw frame bytes: {frame.hex(' ')}")
 
             if len(frame) != self.EGRAM_FRAME_SIZE:
                 print(f"[Serial] Short frame, len={len(frame)}")
                 return None
 
-            raw_val = int.from_bytes(frame[0:2], byteorder="little", signed=True)
+            # Split according to new spec
+            marker_u16 = int.from_bytes(frame[0:2], byteorder="little", signed=False)
+            raw_u16    = int.from_bytes(frame[2:4], byteorder="little", signed=False)
 
-            marker_bytes = frame[2:4]
-            try:
-                marker = marker_bytes.decode("ascii")
-            except UnicodeDecodeError:
-                marker = "--"
+            # Raw is already 0..5000 mV according to your spec
+            raw_mv = raw_u16
 
-            if marker not in {"--", "VS", "VP", "()"}:
-                print(f"[Serial] Unknown marker {marker_bytes!r}, forcing '--'")
-                marker = "--"
+            # Try to interpret marker as two ASCII chars first
+            b0, b1 = frame[0], frame[1]
+            if 32 <= b0 <= 126 and 32 <= b1 <= 126:
+                try:
+                    marker = bytes([b0, b1]).decode("ascii")
+                except UnicodeDecodeError:
+                    marker = "--"
+            else:
+                # Fallback numeric code in low byte of marker_u16
+                code = marker_u16 & 0xFF
+                if code == 0:
+                    marker = "--"
+                elif code == 1:
+                    marker = "VS"
+                elif code == 2:
+                    marker = "VP"
+                elif code == 3:
+                    marker = "()"
+                else:
+                    print(f"[Serial] Unknown marker code {marker_u16}, forcing '--'")
+                    marker = "--"
 
-            print(f"[Serial] Parsed sample raw={raw_val}, marker={marker}")
-            return raw_val, marker
+            print(f"[Serial] Parsed sample raw_mv={raw_mv}, marker={marker}")
+            return raw_mv, marker
 
         except Exception as e:
             print(f"[Serial] Egram read error: {e}")
             return None
+
+    def start_egram_stream(self) -> bool:
+        """
+        Send an egram START command so the pacemaker begins streaming
+        4 byte frames with m_vraw plus marker.
+        Here I use command byte 0x33. Change it if your Simulink model
+        uses a different command code.
+        """
+        if not self.ser or not self.ser.is_open:
+            print("[Serial] Cannot start egram, port is not open")
+            return False
+
+        try:
+            frame = struct.pack(self.FMT_18_BYTES, 0x16, 0x33, *([0] * 16))
+            print(f"[Serial] Sending egram START: {frame.hex().upper()}")
+            self.ser.write(frame)
+            return True
+        except Exception as e:
+            print(f"[Serial] Egram start send error: {e}")
+            return False
+
+    def stop_egram_stream(self) -> bool:
+        """
+        Send an egram STOP command so the pacemaker stops streaming.
+        Here I use command byte 0x34. Change it if your Simulink model
+        uses a different command code.
+        """
+        if not self.ser or not self.ser.is_open:
+            print("[Serial] Cannot stop egram, port is not open")
+            return False
+
+        try:
+            frame = struct.pack(self.FMT_18_BYTES, 0x16, 0x34, *([0] * 16))
+            print(f"[Serial] Sending egram STOP: {frame.hex().upper()}")
+            self.ser.write(frame)
+            return True
+        except Exception as e:
+            print(f"[Serial] Egram stop send error: {e}")
+            return False
