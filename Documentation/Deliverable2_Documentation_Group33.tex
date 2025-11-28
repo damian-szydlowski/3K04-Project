@@ -13,30 +13,36 @@
 \usepackage{multirow}
 \usepackage[most]{tcolorbox}
 \usepackage{titlesec}
+\usepackage{listings}
+\usepackage{xcolor} % For custom colors
+\renewcommand{\lstlistingname}{Code}
 
-\titleclass{\subsubsubsection}{straight}[\subsection]
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    commentstyle=\color{green!50!black},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    frameround=B,
+    rulecolor=\color{black},
+    backgroundcolor=\color{gray!10}
+}
 
-\newcounter{subsubsubsection}[subsubsection]
-\renewcommand\thesubsubsubsection{\thesubsubsection.\arabic{subsubsubsection}}
-\renewcommand\theparagraph{\thesubsubsubsection.\arabic{paragraph}}
-\titleformat{\subsubsubsection}
-  {\normalfont\normalsize\bfseries}{\thesubsubsubsection}{1em}{}
-\titlespacing*{\subsubsubsection}
-{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+\renewcommand\theparagraph{\thesubsubsection.\arabic{paragraph}}
 
 \makeatletter
 \renewcommand\paragraph{\@startsection{paragraph}{5}{\z@}%
   {3.25ex \@plus1ex \@minus.2ex}%
   {-1em}%
   {\normalfont\normalsize\bfseries}}
-\renewcommand\subparagraph{\@startsection{subparagraph}{6}{\parindent}%
-  {3.25ex \@plus1ex \@minus .2ex}%
-  {-1em}%
-  {\normalfont\normalsize\bfseries}}
-\def\toclevel@subsubsubsection{4}
-\def\toclevel@paragraph{5}
-\def\l@subsubsubsection{\@dottedtocline{4}{7em}{4em}}
-\def\l@paragraph{\@dottedtocline{5}{10em}{5em}}
+
+\def\toclevel@paragraph{4}
+\def\l@paragraph{\@dottedtocline{4}{7em}{4em}}
 
 \makeatother
 
@@ -144,9 +150,8 @@
     \end{tabular}
 \end{table}
 \newpage
-\section{Part 1}
 
-\subsection{Introduction}
+\section{Introduction}
 
 It is hard to understate the importance of the human heart. The heart is the core part of the cardiovascular system; supplying nutrients and oxygen to all the cells
 and removing carbon dioxide, especially to vital organs such as the brain, it is imperative for it to be working flawlessly and harmoniously at all times.
@@ -164,9 +169,9 @@ the DCM while updating and maintaining documentation.
 
 
 
-\subsection{Requirements}
+\section{Requirements}
 
-\subsubsection{System Requirements}
+\subsection{System Requirements}
 
 \begin{table}[H]
 \centering
@@ -188,7 +193,7 @@ The pacing logic shall be implemented in Simulink and the DCM as a separate GUI 
 \end{table}
 
 
-\subsubsection{Programming Requirements}
+\subsection{Programming Requirements}
 
 \begin{table}[H]
 \centering
@@ -219,7 +224,7 @@ Each pacing mode shall follow the response implied by its letters: O for asynchr
 \end{table}
 
 
-\subsubsection{Hardware Requirements}
+\subsection{Hardware Requirements}
 
 \begin{table}[H]
 \centering
@@ -238,7 +243,7 @@ A dedicated signal shall enable or disable the front end sensing circuitry so AD
 \end{table}
 
 
-\subsubsection{DCM Requirements}
+\subsection{DCM Requirements}
 
 \begin{table}[H]
 \centering
@@ -259,7 +264,7 @@ A dedicated signal shall enable or disable the front end sensing circuitry so AD
     \end{tabular}
 \end{table}
 
-\subsubsection{Serial Requirements}
+\subsection{Serial Requirements}
 
 \begin{table}[H]
     \centering
@@ -280,7 +285,7 @@ A dedicated signal shall enable or disable the front end sensing circuitry so AD
     \end{tabular}
 \end{table}
 
-\subsubsection{Egram Requirements}
+\subsection{Egram Requirements}
 
 \begin{table}[H]
     \centering
@@ -297,7 +302,7 @@ A dedicated signal shall enable or disable the front end sensing circuitry so AD
     \end{tabular}
 \end{table}
 
-\subsubsection{Rate Adaptivity Requirements}
+\subsection{Rate Adaptivity Requirements}
 
 \begin{table}[H]
     \centering
@@ -314,7 +319,7 @@ A dedicated signal shall enable or disable the front end sensing circuitry so AD
     \end{tabular}
 \end{table}
 
-\subsubsection{Bonus Requirements}
+\subsection{Bonus Requirements}
 
 \begin{table}[H]
     \centering
@@ -334,12 +339,12 @@ A dedicated signal shall enable or disable the front end sensing circuitry so AD
 
 
 \newpage
-\subsection{Design}
+\section{Design}
 \label{dessec}
 
-\subsubsection{Simulink Design - Deliverable 1}
+\subsection{Simulink Design - Deliverable 1}
 
-\subsubsubsection{Overall Design}
+\subsubsection{Overall Design}
 
 \begin{tcolorbox}
     \begin{figure}[H]
@@ -353,7 +358,7 @@ input monitor variables, stateflow logic for modes, and hardware hiding. \hyperr
 workflow of the system:
 
 \newpage
-\subsubsubsection{Input Constant Variables}
+\subsubsection{Input Constant Variables}
 
 \begin{tcolorbox}
     \begin{figure}[H]
@@ -390,7 +395,7 @@ The modifiable ventricular variables are:
     \item \textbf{Sense (Sensitivity)} - Determines the minimum value a ventricle signal must be to be considered by the pacemaker.
 \end{itemize}
 
-\subsubsubsection{Monitored Input Variables}
+\subsubsection{Monitored Input Variables}
 
 \begin{tcolorbox}
     \begin{figure}[H]\label{InMon}
@@ -402,7 +407,7 @@ The monitored input variables can be seen in the above \hyperref[InMon]{Figure 3
 variables. The pulses are sensed with through GPIO pins connecting to a board simulating heart conditions. 
 
 \newpage
-\subsubsubsection{Stateflow Modules}
+\subsubsection{Stateflow Modules}
 \begin{tcolorbox}
     \begin{figure}[H]\label{StateMod}
         \includegraphics[width=\textwidth]{StateMod.png}
@@ -413,7 +418,7 @@ The stateflow diagram in Simulink is shown above. It shows the transition betwee
 \hyperref[ConstIn]{Figure 2}. When switching between modes, a core state is returned to that resets variables to their nominal values. 
 
 \newpage
-\subsubsubsection{AOO Stateflow Model}
+\subsubsection{AOO Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]\label{AOOSF}
         \includegraphics[width=\textwidth]{AOO.png}
@@ -424,7 +429,7 @@ The above stateflow, \hyperref[AOOSF]{Figure 5}, shows the stateflow for the AOO
 controlling discharge and charging of the capacitor to specified nominal values.
 
 \newpage
-\subsubsubsection{VOO Stateflow Model}
+\subsubsection{VOO Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]\label{VOOSF}
         \includegraphics[width=\textwidth]{VOO.png}
@@ -435,7 +440,7 @@ Similar to the AOO stateflow, the above figure, \hyperref[VOOSF]{Figure 6}, show
 charging and discharging of the capacitor using specified nominal values. 
 
 \newpage
-\subsubsubsection{VII Stateflow Model}
+\subsubsection{VII Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]\label{VVISF}
         \includegraphics[width=\textwidth]{VVI.png}
@@ -450,7 +455,7 @@ and correct heart rhythms accordingly, or solely deliver pacing pulses. The last
 discharging state where the pacing pulse is produced. 
 
 \newpage
-\subsubsubsection{AAI Stateflow Model}
+\subsubsection{AAI Stateflow Model}
 \begin{tcolorbox}
     \begin{figure}[H]\label{AAISF}
         \includegraphics[width=\textwidth]{AAI.png}
@@ -466,7 +471,7 @@ to prevent the pacemaker from sensing ringing. This state then transitions to th
 has passed. 
 
 \newpage
-\subsubsubsection{Hardware Hiding}
+\subsubsection{Hardware Hiding}
 
 \begin{tcolorbox}
     \begin{figure}[H]\label{HardHide}
@@ -479,95 +484,18 @@ The above image, \hyperref[HardHide]{Figure 9} shows abstraction of the GPIO pin
 It connects logical output signals to the pins on the FRDM-K64F. This allows for better readability,
 thus making the code easier to maintain, debug and safer. 
 
-\subsubsection{Simulink Design - Deliverable 2}
+\newpage
+\subsection{Simulink Design - Deliverable 2}
+
+
+\subsubsection{Rate Response}
 
 \newpage
-\subsubsection{Simulink Design - Deliverable 2}
-
-\subsubsubsection{Serial Packet Structure}
-With the addition of additional parameters a data conversion table is used  
-to organize the multiple data types being sent. This can be seen in the table below:
-
-\begin{table}[H]
-    \caption{Parameter Settings}
-\begin{tabular}{|p{3.4cm}|p{2.5cm}|p{2.5cm}|p{2.5cm}|p{1cm}|p{1.2cm}|p{1.2cm}|}
-
-    \hline
-    \textbf{Parameter} & \textbf{Min} & \textbf{Max} & \textbf{Inc} & \textbf{Unit} & \textbf{Type} & \textbf{Bytes} \\ 
-    \hline
-    LRL & 30 & 175 & 5 & BPM & Uint8 & 1 \\ 
-    \hline
-    URL & 50 & 175 & 5 & BPM & Uint8 & 1 \\ 
-    \hline
-    Max Sensor Rate & 50 & 175 & 5 & BPM & Uint8 & 1 \\ 
-    \hline
-    Fixed AV Delay & 70 & 300 & 10 & ms & Uint8 & 1 \\ 
-    \hline
-    Dynamic AV Delay & OFF & ON & N/A & N/A & Bool & 1 \\ 
-    \hline
-    Sensed AV Delay Offset & 0 \newline (lowest -10) & -100 & -10 & ms & Uint8 & 1 \\ 
-    \hline
-    Atrial Amplitude & 0.00 & 5.00 & 1.25 & Volts & Uint8 & 1 \\ 
-    \hline
-    Ventricular Amplitude & 0.00 & 5.00 & 1.25 & Volts & Uint8 & 1 \\ 
-    \hline
-
-    Atrial Pulse Width & 0.05 \newline 0.1 & - \newline 1.9 & - \newline 0.1 & ms & Uint8 & 1 \\ 
-    \hline
-    Ventricular Pulse Width & 0.05 \newline 0.1 & - \newline 1.9 & - \newline 0.1 & ms & Uint8 & 1 \\ 
-    \hline
-    Atrial Sensitivity & 0.25 \newline 1 & 0.75 \newline 10 & 0.25 \newline 0.5 & mV & Uint8 & 1 \\ 
-    \hline
-    Ventricular Sensitivity & 0.25 \newline 1 & 0.75 \newline 10 & 0.25 \newline 0.5 & mV & Uint8 & 1 \\ 
-    \hline
-    VRP & 150 & 500 & 10 & ms & Uint8 & 1 \\ 
-    \hline
-    ARP & 150 & 500 & 10 & ms & Uint8 & 1 \\ 
-    \hline
-    PVARP & 150 & 500 & 10 & ms & Uint8 & 1 \\ 
-    \hline
-    PVARP Extension & 0 & 400 & 50 & ms & Uint8 & 1 \\ 
-    \hline
-    Hysteresis & OFF & ON & N/A & N/A & Bool & 1 \\ 
-    \hline
-    Rate Smoothing & 0 & 21 & 3 & N/A & Uint8 & 1 \\ 
-    \hline
-    % STACKED VALUES for ATR Duration
-    ATR Duration & 10 \newline 20 \newline 100 & - \newline 80 \newline 2000 & - \newline 20 \newline 100 & cc & Uint8 & 1 \\ 
-    \hline
-    ATR Fallback Mode & OFF & ON & N/A & N/A & Bool & 1 \\ 
-    \hline
-    ATR Fallback Time & 1 & 5 & 1 & min & Uint8 & 1 \\ 
-    \hline
-    
-    Activity Threshold & 
-    \multicolumn{3}{p{7.5cm}|}{V-Low, Low, Med-Low, Med, Med-High, High, V-High} & 
-    N/A & Uint8 & 1 \\ 
-    \hline
-    
-    Reaction Time & 10 & 50 & 10 & sec & Uint8 & 1 \\ 
-    \hline
-    Response Factor & 1 & 16 & 1 & N/A & Uint8 & 1 \\ 
-    \hline
-    Recovery Time & 2 & 16 & 1 & min & Uint8 & 1 \\ 
-    \hline
-    Mode & 
-    \multicolumn{3}{p{7.5cm}|}{OFF, DDD, VDD, DDI, DOO, AOO, AAI, VOO, VVI, AAT, VVT, DDDR, VDDR, DDIR, DOOR, AOOR, AAIR, VOOR, VVIR} & 
-    N/A & Uint8 & 1 \\ 
-    \hline
-
-\end{tabular}
-
-\end{table}
-
-\subsubsubsection{Rate Response Curve}
-
-\newpage
-\subsubsection{DCM Design}
+\subsection{DCM Design}
 
 The design of the DCM has 3 seperate sections; the \textbf{model, view and controller.} 
 
-\subsubsubsection{Model}
+\subsubsection{Model}
 The model section handles the applications data and user logic. It does not interact directly with the interface but 
 only manages data and enforces user authentication. Below is an explanation of the individual Python files and their 
 functionality:
@@ -608,7 +536,7 @@ functionality:
     \end{itemize}
 \end{enumerate}
 
-\subsubsubsection{View}
+\subsubsection{View}
 The view section is what the user sees and interacts with. It is built with the customtkinter 
 library for a more aesthetically pleasing interface. They do not have any control logic, only 
 to display data and send user actions such as button clicks to the controller. Below 
@@ -639,7 +567,7 @@ are an explanation of each view:
     \end{itemize}
 \end{enumerate}
 
-\subsubsubsection{Controller}
+\subsubsection{Controller}
 
 \paragraph{Controller}
 \begin{enumerate}[label=]
@@ -662,7 +590,7 @@ are an explanation of each view:
     is to create an instance of the controller and run it in the main loop, starting the customtkinter application. 
 \end{enumerate}
 
-\subsubsubsection{Views of DCM GUI}
+\subsubsection{Views of DCM GUI}
 \begin{tcolorbox}
     \begin{figure}[H]
         \centering
@@ -695,40 +623,372 @@ are an explanation of each view:
     \end{figure}
 \end{tcolorbox}
 
-\subsubsection{Assurance Cases}
+\subsection{DCM \& Serial Design - Deliverable 2}
 
-\newpage
-\section{Part 2}
+The DCM was changed up in deliverable 2 to allow for serial communication and more modes to be used. 
+This is accompanied by a new model in the structure of the DCM, serial\_comms.py. 
 
-\subsection{Requirements Potential Changes}
+\paragraph{Serial\_Comms}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} Provides serial communication functions to the DCM through serial send and recieve functions.
+    \item \textbf{Functions:} 
+    \begin{itemize}
+        \item Serial port management - allows low-level hardware connection by scanning for COM ports through the get\_ports function, establishes connection for the DCM by setting baud rate and other parameters, and safely disconnecting devices. 
+        \item Binary Data Structure - Uses struct library to pack and unpack data for more efficient data transfer. 
+        \item Send\_params - The main function that allows for sending of parameter data to the pacemaker. It typecasts and scales data to allow for more efficient data transfer. 
+        \item Data Verification - The echo feature allows for data to be verified once sent to the pacemaker. 
+        \item Data Streaming - The EKG requires real time data streaming to be effective which is handled through this class. 
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Serial Packet Structure}
+With the addition of additional parameters a data conversion table is used  
+to organize the multiple data types being sent. This can be seen in the table below:
+
+\begin{table}[H]
+    \caption{Parameter Settings}
+    \begin{tabular}{|p{3.4cm}|p{2.5cm}|p{2.5cm}|p{2.5cm}|p{1cm}|p{1.2cm}|p{1.2cm}|}
+        \hline
+        \textbf{Parameter} & \textbf{Min} & \textbf{Max} & \textbf{Inc} & \textbf{Unit} & \textbf{Type} & \textbf{Bytes} \\ 
+        \hline
+        LRL & 30 & 175 & 5 & BPM & Uint8 & 1 \\ 
+        \hline
+        URL & 50 & 175 & 5 & BPM & Uint8 & 1 \\ 
+        \hline
+        Max Sensor Rate & 50 & 175 & 5 & BPM & Uint8 & 1 \\ 
+        \hline
+        Fixed AV Delay & 70 & 300 & 10 & ms & Uint8 & 1 \\ 
+        \hline
+        Dynamic AV Delay & OFF & ON & N/A & N/A & Bool & 1 \\ 
+        \hline
+        Sensed AV Delay Offset & 0 \newline (lowest -10) & -100 & -10 & ms & Uint8 & 1 \\ 
+        \hline
+        Atrial Amplitude & 0.00 & 5.00 & 1.25 & Volts & Uint8 & 1 \\ 
+        \hline
+        Ventricular Amplitude & 0.00 & 5.00 & 1.25 & Volts & Uint8 & 1 \\ 
+        \hline
+
+        Atrial Pulse Width & 0.05 \newline 0.1 & - \newline 1.9 & - \newline 0.1 & ms & Uint8 & 1 \\ 
+        \hline
+        Ventricular Pulse Width & 0.05 \newline 0.1 & - \newline 1.9 & - \newline 0.1 & ms & Uint8 & 1 \\ 
+        \hline
+        Atrial Sensitivity & 0.25 \newline 1 & 0.75 \newline 10 & 0.25 \newline 0.5 & mV & Uint8 & 1 \\ 
+        \hline
+        Ventricular Sensitivity & 0.25 \newline 1 & 0.75 \newline 10 & 0.25 \newline 0.5 & mV & Uint8 & 1 \\ 
+        \hline
+        VRP & 150 & 500 & 10 & ms & Uint8 & 1 \\ 
+        \hline
+        ARP & 150 & 500 & 10 & ms & Uint8 & 1 \\ 
+        \hline
+        PVARP & 150 & 500 & 10 & ms & Uint8 & 1 \\ 
+        \hline
+        PVARP Extension & 0 & 400 & 50 & ms & Uint8 & 1 \\ 
+        \hline
+        Hysteresis & OFF & ON & N/A & N/A & Bool & 1 \\ 
+        \hline
+        Rate Smoothing & 0 & 21 & 3 & N/A & Uint8 & 1 \\ 
+        \hline
+        % STACKED VALUES for ATR Duration
+        ATR Duration & 10 \newline 20 \newline 100 & - \newline 80 \newline 2000 & - \newline 20 \newline 100 & cc & Uint8 & 1 \\ 
+        \hline
+        ATR Fallback Mode & OFF & ON & N/A & N/A & Bool & 1 \\ 
+        \hline
+        ATR Fallback Time & 1 & 5 & 1 & min & Uint8 & 1 \\ 
+        \hline
+        
+        Activity Threshold & 
+        \multicolumn{3}{p{7.5cm}|}{V-Low, Low, Med-Low, Med, Med-High, High, V-High} & 
+        N/A & Uint8 & 1 \\ 
+        \hline
+        
+        Reaction Time & 10 & 50 & 10 & sec & Uint8 & 1 \\ 
+        \hline
+        Response Factor & 1 & 16 & 1 & N/A & Uint8 & 1 \\ 
+        \hline
+        Recovery Time & 2 & 16 & 1 & min & Uint8 & 1 \\ 
+        \hline
+        Mode & 
+        \multicolumn{3}{p{7.5cm}|}{OFF, DDD, VDD, DDI, DOO, AOO, AAI, VOO, VVI, AAT, VVT, DDDR, VDDR, DDIR, DOOR, AOOR, AAIR, VOOR, VVIR} & 
+        N/A & Uint8 & 1 \\ 
+        \hline
+
+\end{tabular}
+
+\end{table}
+
+\subsubsection{Main View Design \& Decisions}
+Building on top of the previous design the main page was given plenty of new features. The main page can be seen 
+in the screenshot below:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{dcmmain2.png}
+        \caption{DCM Main Page - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+Changes can be seen in the top left and right corner, the bottom left corner, and the middle. The top left corner 
+now displays COM connections with the computer rather than a mock device. 
+
+The top left features font size changing buttons, this was added for accessibility features as 
+a previous issue was that the font size can be too small or too large when the DCM 
+window was shurnk or expanded. 
+
+The bottom left corner now shows all COM connections on the PC, selecting the pacemaking device 
+is typically identified as the J-Link Segger and connecting to a device that is not identified 
+using these key words, a warning is shown as seen below:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{potentialwrong.png}
+        \caption{Warning of Potentially Wrong Device}
+    \end{figure}
+\end{tcolorbox}
+
+This is done through this code snippet in the controller.py file:
+
+\begin{lstlisting}[caption={Correct Device Check}]
+# --- SAFETY CHECK ---
+safe_keywords = ["mbed", "OpenSDA", "NXP", "DAPLink", "JLink", "Segger"]
+
+is_likely_safe = any(keyword.lower() in port_name_display.lower() for keyword in safe_keywords)
+
+if not is_likely_safe:
+    response = messagebox.askyesno(
+        "Potential Wrong Device", 
+        f"The device '{port_name_display}' does not look like a pacemaker board.\n\n"
+        "Do you want to connect anyway?"
+    )
+\end{lstlisting}
+
+Connecting anyway will not allow you to send data through as a safety feature for 
+unrecognized devices. 
+
+If the pacemaking device is connected however, it will prompt confirming connection before 
+establishing serial communication. 
+
+Lastly, the middle section has been expanded to both allow for expansion when font size is increased 
+and to support all the new modes alongside the EKG view. 
+
+\subsubsection{Parameter Pages Design \& Decisions}
+
+The parameter page has been changed to account for all new parameters. Previously, we greyed out 
+non-used parameters for each mode however, with the increase of parameters the view will get cluttered 
+and more complicated to navigate. Thus, only changeable parameters for each mode is shown:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{AOOex.png}
+        \caption{Updated Parameter Page for AOO Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+This view also contains more buttons for the serial communication side of things. These features are 
+shown on the left side of the screen with buttons verify send, send, save and the bar for echo verification. 
+
+The save button saves the parameters locally for convenience so you do not have to remember all parameters and 
+set them all again each time you want to modify values. 
+
+The verify send sends a packet of data to the simulink that asks for the parameter values and is sent back. 
+This is a safety feature to ensure that the right data and parameters were sent to the simulink and nothing was 
+improperly sent or corrupted. 
+
+The send button sends a packet of data containing all the parameters to the simulink. This is in compliance with Table 11. To ensure 
+simplicity the non-used values are just replaced with 0.0s. The simulink handling the packet unpacking is shown in below where rxdata and status 
+are provided by the serial recieve block:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{serialcomm.png}
+        \caption{Serial Communication Simulink - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+From this, we see as well how the echo works by sending a second byte of 22 rather than 55. 
+The send\_params() function sends all parameters back by MUXing all data and sending it back via a serial transmit block. 
+
+For some pages the format is slightly different such as the rate adaptive modes. As the parameter is a word with an 
+approximate number value a drop down menu seen below is used to select. 
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{AAIRview.png}
+        \caption{DCM View of AAIR - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+This corresponds to numerical values in the code of 1.5 at V-LOW with increments of 0.5 with 
+higher levels of activity threshold. These values were done through testing with the use of the 
+accelerometer as a nominal value of 1 through stationary action and a max value of 7 was found. 
+
+\subsubsection{EKG View Design \& Decisions}
+
+The EKG is handled through the ekg\_model.py and ekg\_view.py. It takes analog data from the pins relating 
+to the atrium and ventricle. It samples the data and plots it on a graph using the matplotlib python library.
+This was used as it gave many useful features such as the ability to scroll and zoom on the EKG data. The view for the EKG can be seen 
+below:
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{ekgview.png}
+        \caption{View of EKG Page}
+    \end{figure}
+\end{tcolorbox}
+
+This page also allows you to isolate whether or not you want to look at just the 
+atrial pulses, ventricular pulese or both with functions on the bottom left to zoom, scroll 
+save and configure the subplots. The view of the EKG can be seen below with dummy data:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.9\textwidth]{ekgdata.png}
+        \caption{EKG View with Data}
+    \end{figure}
+\end{tcolorbox}
+
+\newpage 
+\subsection{Assurance Cases}
+
+Some features of safety were covered in the design section of this documentation, however this 
+section will be more comprehensive. 
+
+\subsubsection{Clamping of Heart Rate For Rate Adapative Pacing}
 
 \begin{enumerate}[label=]
-    \item \textbf{Pacing Modes:} Additional pacing modes are to be developed such as AOOR, VOOR, AAIR, and VVIR. 
-    \item \textbf{Hardware Communication:} The connection between hardware and GUI may be developed in the next deliverable. 
-    The functionality implemented in this deliverable will be used to interface with the board.
-    \item \textbf{Parameter Changes:} As additional pacing modes are to be developed, this in turn will bring additional parameters that will 
-    need to be added and configured. 
-    \item \textbf{Electrogram Functionality:} The electrogram functionality will be used to store and display egram data provided by the 
-    simulating board. 
+    \item \textbf{Safety Goal:} For rate adaptive pacing modes, the heart rate must not be lower than the lower rate limit and the max sensor limit. 
+    \item \textbf{Rationale:} To prevent the heart from beating too slow, lower than lower rate limit, or beating too fast, higher than max sensor limit, to ensure healthy heart operation. 
+    \item \textbf{Evidence:} The clamp is hard locked from via how its data is processed in simulink seen in the images below. However, this can be seen live through testing 
+    as shown in the demo. The clamp is used in two spots to ensure redundancy as extra signal processing occurs. 
+    
+    \begin{tcolorbox}
+        \begin{figure}[H]
+            \centering 
+            \includegraphics[width=\textwidth]{clamphr.png}
+            \caption{Clamping of Heart Rate 1}
+        \end{figure}
+    \end{tcolorbox}
+
+    \begin{tcolorbox}
+        \begin{figure}[H]
+            \centering 
+            \includegraphics[width=\textwidth]{clamphr.png}
+            \caption{Clamping of Heart Rate 2}
+        \end{figure}
+    \end{tcolorbox}
+\end{enumerate}
+
+\subsubsection{Echo Parameter Verification}
+
+\begin{enumerate}[label=]
+    \item \textbf{Safety Goal:} Ensuring that the data transmitted to the pacemaker by the DCM is correct. 
+    \item \textbf{Rationale:} The ability to verify the data sent with an echo feature is imperative to ensure 
+    data was not corrupted or mismanaged when being sent to the pacemaker. 
+    Without this verification it can potentially cause issues by setting unsafe limits or incorrect parameters causing harm long term. 
+    \item \textbf{Evidence:} The below images are of the Simulink sending the parameters back as well as the 
+    DCM sending back the sent parameters. 
+    \begin{tcolorbox}
+        \begin{figure}[H]
+            \centering 
+            \includegraphics[width=\textwidth]{echosim.png}
+            \caption{Echo Stateflow in Simulink}
+        \end{figure}
+    \end{tcolorbox}
+
+    \begin{tcolorbox}
+        \begin{figure}[H]
+            \centering 
+            \includegraphics[width=0.7\textwidth]{sendparams.png}
+            \caption{Send Params Function in Simulink}
+        \end{figure}
+    \end{tcolorbox}
+
+    \begin{lstlisting}[caption={Echo Function in DCM}]
+        def get_echo(self):
+        if not self.ser or not self.ser.is_open: return None
+        try:
+            self.ser.reset_input_buffer()
+            self.ser.write(struct.pack(self.FMT_11_BYTES, 0x16, 0x22, 0,0,0,0.0,0))
+            resp = self.ser.read(9)
+            if len(resp) != 9: return None
+            u = struct.unpack('<BBBHf', resp)
+            return {"red": u[0], "green": u[1], "blue": u[2], "switch_time": u[3], "off_time": u[4]}
+        except Exception: return None
+    \end{lstlisting}
+\end{enumerate}
+
+\subsubsection{Reset Between Mode Switching}
+
+\begin{enumerate}[label=]
+    \item \textbf{Safety Goal:} Prevent unwanted data when switching between pacing modes of the pacemaker.
+    \item \textbf{Rationale:} When switching between modes a default state is returned to before switching to a new mode. This 
+    mode grounds all values to prevent erratic and unwanted behaviour between pacing such as switching to another mode mid pace 
+    which may cause complications
+    \item \textbf{Evidence:} This is soft-locked by the stateflow diagram shown below:
+    \begin{tcolorbox}
+        \begin{figure}[H]
+            \centering 
+            \includegraphics[width=\textwidth]{defstate.png}
+            \caption{Default State in Simulink}
+        \end{figure}
+    \end{tcolorbox}
+\end{enumerate}
+
+\subsubsection{Incorrect Device Handling}
+\begin{enumerate}[label=]
+    \item \textbf{Safety Goal:} When trying to use an unrecognized device the DCM will not allow serial communication and warn the user. 
+    \item \textbf{Rationale:} To prevent the DCM from harming an unrecognized device by sending data and to warn the user that the pacemaker 
+    is currently not the device being configured.
+    \item \textbf{Evidence:} A warning message pops up when an unrecognized device is connected to with code to check the COM for recognizable identifiers.
+    \begin{tcolorbox}
+        \begin{figure}[H]
+            \centering 
+            \includegraphics[width=\textwidth]{potentialwrong.png}
+            \caption{Potentially Wrong Device Warning in DCM}
+        \end{figure}
+    \end{tcolorbox}
+
+    \begin{lstlisting}[caption={Safety Check of Device in Code}]
+        # --- SAFETY CHECK ---
+        safe_keywords = ["mbed", "OpenSDA", "NXP", "DAPLink", "JLink", "Segger"]
+        
+        is_likely_safe = any(keyword.lower() in port_name_display.lower() for keyword in safe_keywords)
+
+        if not is_likely_safe:
+            response = messagebox.askyesno(
+                "Potential Wrong Device", 
+                f"The device '{port_name_display}' does not look like a pacemaker board.\n\n"
+                "Do you want to connect anyway?"
+            )
+    \end{lstlisting}
 \end{enumerate}
 
 
-\subsection{Design Decision Potential Changes}
+\newpage
+
+
+
+\section{Requirements Potential Changes}
 
 \begin{enumerate}[label=]
-    \item \textbf{Expansion of Libraries:} As hardware communication will be implemented in the next iteration, 
-    hardware communication libraries such as those implementing serial communication will need to be explored.
-    \item \textbf{Expansion of GUI:} To accomodate for more pacing modes, the GUI will need to be modified. Furthermore, 
-    for improved quality of life features, more graphics and interactive features may be added. 
-    \item \textbf{DCM Architecture:} The DCM system may need to be refactored to implement hardware communication. 
-    \item \textbf{Simulink Architecture:} As 4 more additional modes are being added for a total of 8 pacing modes, the 
-    Simulink structure may need to be modified to integrate all new features more easily. 
-    \item \textbf{Data Verification:} As data will be actively transfered from the DCM to the pacemaker hardware, data integrity further becomes 
-    more crucial to maintain. A system to verify parameters are correctly sent and saved will need to be implemented. 
+    \item \textbf{Pacing Modes:} 
+
+\end{enumerate}
+
+
+\section{Design Decision Potential Changes}
+
+\begin{enumerate}[label=]
+    \item \textbf{Expansion of Libraries:} 
 \end{enumerate}
 
 \newpage
-\subsection{Module Description}
+\section{Module Description}
 
 Although breifly highlighted in the \hyperref[dessec]{design section} of this documentation. This section will go 
 into more detail about the purpose of each module, key functionality, variables, and how each module interacts with 
@@ -737,20 +997,20 @@ one another.
 As shown in \hyperref[SimWholeView]{Figure 1}, there are 3 primary modules operating the pacemaker; \textbf{input constant variables, 
 stateflow logic for modes, and hardware hiding.}
 
-\subsubsection{Input Constant Variables Module}
+\subsection{Input Constant Variables Module}
 This module is highlighted in the \hyperref[dessec]{design section}. It goes through all the state variables that 
 are changeable parameters of the pacemaker. These inputs include general inputs such as the pacing mode, low rate interval, and hysteresis settings, as well 
 as parameters for atrial and ventricle pacing. These parameters are then used in the stateflow logic module to 
 complete pacing to user specifications.
 
-\subsubsection{Stateflow Logic}
+\subsection{Stateflow Logic}
 This module has many submodules which are also covered in the \hyperref[dessec]{design section}. The overall state machine controlling 
 mode selection and reseting of variables to prevent unwanted pacing behaviour is shown in \hyperref[StateMod]{Figure 4}. This module 
 converts input parameters into raw data that can be further converted to electrical signals. This module recieves data 
 from the input constant variables module as well as from the monitored input variables. This module then feeds into 
 hardware hiding. 
 
-\subsubsection{Hardware Hiding}
+\subsection{Hardware Hiding}
 Hardware hiding is also briefly covered in the \hyperref[dessec]{design section}. The purpose of this module is 
 to convert the signals from the stateflow logic module into outputted electrical signals through pins. As shown in 
 \hyperref[HardHide]{Figure 9}, pins are mapped to certain electrical signals such as atrial outputs, ventricle outputs, 
@@ -758,11 +1018,11 @@ front end signals, and general pin configurations such as grounding pins. This i
 are easier to debug with higher level identification and function of each GPIO. 
 
 \newpage
-\subsection{Testing}
+\section{Testing}
 
-\subsubsection{SimuLink Mode Testing}
+\subsection{SimuLink Mode Testing}
 
-\subsubsubsection{Testing of AOO}
+\subsubsection{Testing of AOO}
 
 \begin{enumerate}[label=]
    \item \textbf{Purpose:} The purpose of this test is to test basic AOO functionality.
@@ -793,7 +1053,7 @@ are easier to debug with higher level identification and function of each GPIO.
 \end{tcolorbox}
 
 \newpage
-\subsubsubsection{Testing of VOO}
+\subsubsection{Testing of VOO}
 
 \begin{enumerate}[label=]
    \item \textbf{Purpose:} The purpose of this test is to test basic VOO functionality.
@@ -824,7 +1084,7 @@ are easier to debug with higher level identification and function of each GPIO.
 \end{tcolorbox}
 
 \newpage
-\subsubsubsection{Testing of AAI}
+\subsubsection{Testing of AAI}
 
 \paragraph{No Natural Heart Rate}
 
@@ -887,7 +1147,7 @@ are easier to debug with higher level identification and function of each GPIO.
 \end{tcolorbox}
 
 \newpage
-\subsubsubsection{Testing of VVI}
+\subsubsection{Testing of VVI}
 
 \paragraph{No Natural Heart Rate}
 
@@ -949,7 +1209,7 @@ are easier to debug with higher level identification and function of each GPIO.
 \end{tcolorbox}
 
 \newpage
-\subsubsubsection{Hysteresis Testing}
+\subsubsection{Hysteresis Testing}
 
 \paragraph{Hysteresis Test 1 (60 BPM)}
 
@@ -1008,9 +1268,9 @@ are easier to debug with higher level identification and function of each GPIO.
 \end{tcolorbox}
 
 \newpage
-\subsubsection{DCM Testing}
+\subsection{DCM Testing}
 
-\subsubsubsection{Login and Registration}
+\subsubsection{Login and Registration}
 
 \begin{enumerate}[label=]
    \item \textbf{Purpose:} The purpose of this test is to verify correct storage of newly registered user data 
@@ -1053,7 +1313,7 @@ are easier to debug with higher level identification and function of each GPIO.
 \end{tcolorbox}
 
 \newpage
-\subsubsubsection{Parameter Input Validation}
+\subsubsection{Parameter Input Validation}
 \begin{enumerate}[label=]
    \item \textbf{Purpose:} To enforce numeric types within an allowed range and to ensure the upper rate interval is greater than lower rate interval. 
    \item \textbf{Input Conditions:} Entering a non-numeric, an out of range number and an upper rate interval that is greater than lower rate interval in parameter settings. 
@@ -1100,7 +1360,7 @@ invalid values into parameter page.
 \end{tcolorbox}
 
 \newpage
-\subsubsubsection{Mode Selection and Data Retrieval}
+\subsubsection{Mode Selection and Data Retrieval}
 \begin{enumerate}[label=]
    \item \textbf{Purpose:} To test data storage, ensuring proper saving of user data
    \item \textbf{Input Conditions:} Registering account, logging in, and saving parameters.
@@ -1129,12 +1389,12 @@ from the previous test.
     \end{figure}
 \end{tcolorbox}
 
-\subsubsection{Serial Testing}
+\subsection{Serial Testing}
 
-\subsubsection{Rate Adaptive Test}
+\subsection{Rate Adaptive Test}
 
 \newpage
-\subsection{GenAI Usage}
+\section{GenAI Usage}
 
 We used a Generative AI assistant to support development of the DCM. It provided starter boilerplate for a 
 Tkinter app with a welcome screen, registration and login, JSON storage capped at ten users, which we then 
