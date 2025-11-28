@@ -181,30 +181,42 @@ class DCMApp(ctk.CTk):
         try:
             # Handle Activity Threshold Conversion
             act_str = data.get("Activity Threshold", "Med")
-            act_float = thresh_map.get(act_str, 3.0) # Default to Med if missing
+            act_float = thresh_map.get(act_str, 3.0) 
             # Scale by 10 (e.g., 1.5 -> 15)
             act_thresh_uint8 = int(act_float * 10)
 
-            # Gather parameters, defaulting to 0 if not present
+            # NOTE: We use valid defaults (not 0) for parameters missing in the current mode.
+            # This ensures the firmware doesn't reject the packet due to out-of-range values.
+            
             params = {
                 "mode": mode_int,
                 "lrl": int(data.get("Lower Rate Limit", 60)),
                 "msr": int(data.get("Maximum Sensor Rate", 120)), 
-                "a_amp": float(data.get("Atrial Amplitude", 0)),
-                "v_amp": float(data.get("Ventricular Amplitude", 0)),
-                "a_pw": int(data.get("Atrial Pulse Width", 0)),
-                "v_pw": int(data.get("Ventricular Pulse Width", 0)),
-                "a_sens": float(data.get("Atrial Sensitivity", 0)),
-                "v_sens": float(data.get("Ventricular Sensitivity", 0)),
-                "a_ref": int(data.get("ARP", 0) or data.get("PVARP", 0)), 
-                "v_ref": int(data.get("VRP", 0)),
+                
+                # Amplitudes default to 3.5V if missing (0 might be invalid)
+                "a_amp": float(data.get("Atrial Amplitude", 3.5)),
+                "v_amp": float(data.get("Ventricular Amplitude", 3.5)),
+                
+                # Pulse Widths default to 1.0ms if missing
+                # Must be float because input might be "0.5"
+                "a_pw": float(data.get("Atrial Pulse Width", 1.0)),
+                "v_pw": float(data.get("Ventricular Pulse Width", 1.0)),
+                
+                # Sensitivity default 2.5mV
+                "a_sens": float(data.get("Atrial Sensitivity", 2.5)),
+                "v_sens": float(data.get("Ventricular Sensitivity", 2.5)),
+                
+                # Refractory Periods default to standard values (not 0)
+                "a_ref": int(data.get("ARP") or data.get("PVARP") or 250), 
+                "v_ref": int(data.get("VRP", 320)),
+                
                 "hyst": int(data.get("Hysteresis", 0)),
                 
-                # New Rate Adaptive Params
-                "recov": int(data.get("Recovery Time", 0)),
-                "resp_fact": int(data.get("Response Factor", 0)),
-                "act_thresh": act_thresh_uint8,
-                "react_time": int(data.get("Reaction Time", 0))
+                # Rate Adaptive Defaults (Crucial for Packet Acceptance)
+                "recov": int(data.get("Recovery Time", 5)),       # Range 2-16
+                "resp_fact": int(data.get("Response Factor", 8)), # Range 1-16
+                "act_thresh": act_thresh_uint8,                   # Defaults to Med (30)
+                "react_time": int(data.get("Reaction Time", 30))  # Range 10-50
             }
 
             success = self.serial_manager.send_params(params)
@@ -214,8 +226,8 @@ class DCMApp(ctk.CTk):
                 return False
             return True
 
-        except ValueError:
-            messagebox.showerror("Data Error", "Invalid number format in settings.")
+        except ValueError as e:
+            messagebox.showerror("Data Error", f"Invalid number format: {e}")
             return False
 
     def send_debug_color(self, color_code: int):
@@ -277,7 +289,7 @@ class DCMApp(ctk.CTk):
             f"Raw: {raw_str}", 
             f"--- {mode_str} Verified ---",
             f"LRL:       {data['lrl']} ppm",
-            f"MSR:       {data['msr']} ppm",
+            f"MSR:       {data.get('msr', 'N/A')} ppm",
             f"A-Amp:     {data['a_amp']:.1f} V",
             f"V-Amp:     {data['v_amp']:.1f} V",
             f"A-PW:      {data['a_pw']} ms",
@@ -287,10 +299,10 @@ class DCMApp(ctk.CTk):
             f"ARP:       {data['a_ref']} ms",
             f"VRP:       {data['v_ref']} ms",
             f"Hyst:      {data['hyst']}",
-            f"Act Thr:   {data['act_thresh']}",
-            f"React:     {data['react']}",
-            f"Recov:     {data['recov']}",
-            f"Resp Fact: {data['resp_fact']}"
+            f"Act Thr:   {data.get('act_thresh', 'N/A')}",
+            f"React:     {data.get('react', 'N/A')}",
+            f"Recov:     {data.get('recov', 'N/A')}",
+            f"Resp Fact: {data.get('resp_fact', 'N/A')}"
         ]
 
         return "\n".join(lines)

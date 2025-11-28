@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 import tkinter as tk
+import numpy as np
+import time
 import math
 import random
-import time
 
 def create_access_buttons(parent_frame, controller):
     """Adds Font Size buttons to a frame"""
@@ -20,9 +21,12 @@ class EgramView(ctk.CTkFrame):
         super().__init__(parent)
         self.controller = controller
         self.is_running = False
-        self.start_time = time.time()
-        self.annotations = []
-
+        
+        # --- Dual Channel Buffer ---
+        self.data_size = 500
+        self.atr_data = np.zeros(self.data_size)
+        self.vent_data = np.zeros(self.data_size)
+        
         # --- Layout ---
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1) 
@@ -64,15 +68,14 @@ class EgramView(ctk.CTkFrame):
         self._style_plot(self.ax_atr, "Atrium")
         self._style_plot(self.ax_vent, "Ventricle")
         
-        # FIX: Added clip_on=True to lines so they don't bleed out
-        self.line_atr, = self.ax_atr.plot([], [], color="orange", linewidth=1.5, clip_on=True)
-        self.line_vent, = self.ax_vent.plot([], [], color="cyan", linewidth=1.5, clip_on=True)
+        # Initialize Plot Lines (Both active)
+        self.line_atr, = self.ax_atr.plot(np.arange(self.data_size), self.atr_data, color="orange", linewidth=1.5)
+        self.line_vent, = self.ax_vent.plot(np.arange(self.data_size), self.vent_data, color="cyan", linewidth=1.5)
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=graph_container)
         self.canvas.draw()
         self.canvas.get_tk_widget().grid(row=0, column=0, sticky="nsew")
 
-        # Toolbar
         self.toolbar_frame = ctk.CTkFrame(graph_container)
         self.toolbar_frame.grid(row=1, column=0, sticky="ew")
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.toolbar_frame)
@@ -89,7 +92,7 @@ class EgramView(ctk.CTkFrame):
         ax.set_title(title, fontsize=10, color="#333", fontweight="bold")
         ax.set_facecolor('#f0f0f0') 
         ax.grid(True, linestyle='--', alpha=0.6)
-        # We set initial limits, but _animate enforces them
+        ax.set_xlim(0, self.data_size)
         ax.set_ylim(-1.0, 6.0)
 
     def update_font_size(self, size):
@@ -97,13 +100,6 @@ class EgramView(ctk.CTkFrame):
         self.lbl_select.configure(font=normal_font)
         for rb in self.radio_btns: rb.configure(font=normal_font)
         for btn in [self.btn_start, self.btn_stop, self.back_btn]: btn.configure(font=normal_font)
-
-        title_size = size + 2
-        tick_size = size - 2 if size > 10 else 8
-        self.ax_atr.set_title("Atrium", fontsize=title_size, fontweight="bold")
-        self.ax_vent.set_title("Ventricle", fontsize=title_size, fontweight="bold")
-        for ax in [self.ax_atr, self.ax_vent]:
-            ax.tick_params(axis='both', which='major', labelsize=tick_size)
         
         try:
             self.fig.tight_layout()
@@ -118,13 +114,14 @@ class EgramView(ctk.CTkFrame):
         except Exception: pass
 
     def _start_graph(self):
-        self.start_time = time.time()
-        if hasattr(self, "mock_data"):
-             self.mock_data = {"t": [], "atr": [], "vent": [], "markers": []}
-        self.line_atr.set_data([], [])
-        self.line_vent.set_data([], [])
-        for txt in self.annotations: txt.remove()
-        self.annotations.clear()
+        if self.controller.connected:
+            self.controller.serial_manager.start_egram_stream()
+        
+        # Reset Buffers
+        self.atr_data = np.zeros(self.data_size)
+        self.vent_data = np.zeros(self.data_size)
+        self.line_atr.set_ydata(self.atr_data)
+        self.line_vent.set_ydata(self.vent_data)
         
         self.is_running = True
         self.btn_start.configure(state="disabled")
@@ -132,6 +129,9 @@ class EgramView(ctk.CTkFrame):
         self._animate()
 
     def _stop_graph(self):
+        if self.controller.connected:
+            self.controller.serial_manager.stop_egram_stream()
+
         self.is_running = False
         self.btn_start.configure(state="normal")
         self.btn_stop.configure(state="disabled")
@@ -148,63 +148,32 @@ class EgramView(ctk.CTkFrame):
         if not self.is_running or not self.winfo_exists():
             return
 
-        curr_time = time.time() - self.start_time
-        
-        # --- Mock Data ---
-        val = math.sin(curr_time * 5)
-        raw_vent = 4.5 if val > 0.9 else 2.0 + val
-        marker_vent = "VP" if val > 0.9 else "--"
+        # 1. Read Tuple (Atr, Vent)
+        new_sample = None
+        if self.controller.connected:
+            new_sample = self.controller.serial_manager.read_egram_sample()
+        else:
+            # Mock Data
+            curr_time = time.time()
+            new_sample = (
+                2.5 + math.sin(curr_time * 5) + random.uniform(-0.1, 0.1),
+                2.0 + math.cos(curr_time * 5) + random.uniform(-0.1, 0.1)
+            )
 
-        raw_atr = 2.5 + random.uniform(-0.5, 0.5)
-        marker_atr = "AS" if random.random() < 0.05 else "--"
-
-        if not hasattr(self, "mock_data"):
-            self.mock_data = {"t": [], "atr": [], "vent": [], "markers": []}
-        
-        if len(self.mock_data["t"]) > 500: 
-            for key in self.mock_data: self.mock_data[key].pop(0)
-
-        self.mock_data["t"].append(curr_time)
-        self.mock_data["atr"].append(raw_atr)
-        self.mock_data["vent"].append(raw_vent)
-        if marker_atr != "--": self.mock_data["markers"].append((curr_time, raw_atr + 0.3, marker_atr, "atr"))
-        if marker_vent != "--": self.mock_data["markers"].append((curr_time, raw_vent + 0.3, marker_vent, "vent"))
-
-        try:
-            # 1. Update Lines
-            self.line_atr.set_data(self.mock_data["t"], self.mock_data["atr"])
-            self.line_vent.set_data(self.mock_data["t"], self.mock_data["vent"])
-
-            # 2. Update Markers
-            for txt in self.annotations: txt.remove()
-            self.annotations.clear()
-
-            visible_window = 5.0
-            min_t = curr_time - visible_window
+        if new_sample:
+            # Unpack
+            new_atr, new_vent = new_sample
             
-            for m_t, m_y, m_text, m_chan in self.mock_data["markers"]:
-                if m_t >= min_t: # Optimization: only draw visible markers
-                    ax = self.ax_atr if m_chan == "atr" else self.ax_vent
-                    color = "red" if m_chan == "atr" else "blue"
-                    # FIX: clip_on=True ensures markers don't float outside the axes
-                    txt_obj = ax.text(m_t, m_y, m_text, fontsize=8, color=color, ha="center", 
-                                      fontweight="bold", clip_on=True)
-                    self.annotations.append(txt_obj)
+            # --- Update Atrial Buffer ---
+            self.atr_data[:-1] = self.atr_data[1:]
+            self.atr_data[-1] = new_atr
+            self.line_atr.set_ydata(self.atr_data)
 
-            # 3. FIX: Lock Y-Axis Limits so dragging doesn't move the graph vertically
-            self.ax_atr.set_ylim(-1.0, 6.0)
-            self.ax_vent.set_ylim(-1.0, 6.0)
-
-            # 4. Auto-Scroll (only if not manually panning)
-            if self.toolbar.mode == "":  
-                self.ax_atr.set_xlim(curr_time - 5, curr_time)
-                self.ax_vent.set_xlim(curr_time - 5, curr_time)
-
+            # --- Update Ventricular Buffer ---
+            self.vent_data[:-1] = self.vent_data[1:]
+            self.vent_data[-1] = new_vent
+            self.line_vent.set_ydata(self.vent_data)
+            
             self.canvas.draw()
-            self.after(50, self._animate)
-            
-        except tk.TclError:
-            self.is_running = False
-        except Exception as e:
-            print(f"Graph Error: {e}")
-            self.is_running = False
+        
+        self.after(20, self._animate)

@@ -43,8 +43,32 @@ class SerialManager:
             return True
         except Exception: return False
 
+    def send_params(self, params: dict):
+        if not self.ser or not self.ser.is_open: return False
+        try:
+            data = struct.pack(self.FMT_18_BYTES, 
+                               0x16, 0x55, 
+                               int(params.get("mode", 0)),
+                               int(params.get("a_pw", 0) * 100),
+                               int(params.get("v_pw", 0) * 100),
+                               int(params.get("lrl", 60)),
+                               int(params.get("a_amp", 0) * 10),
+                               int(params.get("v_amp", 0) * 10),
+                               int(params.get("a_ref", 0) / 10),
+                               int(params.get("v_ref", 0) / 10),
+                               int(params.get("a_sens", 0) * 10),
+                               int(params.get("v_sens", 0) * 10),
+                               int(params.get("recov", 0)),
+                               int(params.get("resp_fact", 0)),
+                               int(params.get("msr", 0)),
+                               int(params.get("act_thresh", 0)),
+                               int(params.get("react_time", 0)),
+                               int(params.get("hyst", 0)))
+            self.ser.write(data)
+            return True
+        except Exception: return False
+
     def get_echo(self):
-        """LED Echo - Returns Dict"""
         if not self.ser or not self.ser.is_open: return None
         try:
             self.ser.reset_input_buffer()
@@ -56,74 +80,68 @@ class SerialManager:
         except Exception: return None
 
     def get_cardiac_echo(self):
-        """
-        Sends 18 bytes. Expects 16 bytes back.
-        Mapping matches 'image_da8144.png' (Output Mux).
-        """
         if not self.ser or not self.ser.is_open:
             return {"error": "Not Connected"}
-
         try:
             self.ser.reset_input_buffer()
             self.ser.write(struct.pack(self.FMT_18_BYTES, 0x16, 0x22, *([0]*16)))
-
             response = self.ser.read(16)
             raw_hex = response.hex().upper()
-            
             if len(response) != 16:
                 return {"error": f"Timeout.\nRx: {len(response)} B\nRaw: {raw_hex}"}
-
             u = struct.unpack('<BBBBBBBBBBBBBBBB', response)
-            
-            # Map based on Echo Output Order (Top -> Bottom)
             return {
-                "raw": raw_hex,
-                "mode": u[0],              # 1
-                "resp_fact": u[1],         # 2
-                "recov": u[2],             # 3
-                "react": u[3],             # 4
-                "msr": u[4],               # 5
-                "lrl": u[5],               # 6
-                "act_thresh": u[6],        # 7
-                "v_sens": u[7] / 10.0,     # 8
-                "v_ref": u[8] * 10,        # 9
-                "v_pw": u[9],              # 10
-                "v_amp": u[10] / 10.0,     # 11
-                "a_sens": u[11] / 10.0,    # 12
-                "a_ref": u[12] * 10,       # 13
-                "a_pw": u[13],             # 14
-                "a_amp": u[14] / 10.0,     # 15
-                "hyst": u[15]              # 16
+                "raw": raw_hex, "mode": u[0], "resp_fact": u[1], "recov": u[2], "react": u[3], "msr": u[4], "lrl": u[5], "act_thresh": u[6], "v_sens": u[7] / 10.0, "v_ref": u[8] * 10, "v_pw": u[9], "v_amp": u[10] / 10.0, "a_sens": u[11] / 10.0, "a_ref": u[12] * 10, "a_pw": u[13], "a_amp": u[14] / 10.0, "hyst": u[15]
             }
         except Exception as e:
             return {"error": f"Comm Error:\n{str(e)}"}
 
-    def send_params(self, params: dict):
-        """
-        Sends 18 bytes. 
-        Mapping matches 'image_db0126.png' (Stateflow Parsing).
-        """
+    def start_egram_stream(self):
+        """Sends 18 bytes: 16 (Head), 51 (Code), + 16 Zeros."""
         if not self.ser or not self.ser.is_open: return False
         try:
-            # Order: Mode, A_PW, V_PW, LRL, A_Amp, V_Amp, A_Ref, V_Ref, ...
-            data = struct.pack(self.FMT_18_BYTES, 
-                               0x16, 0x55, 
-                               int(params.get("mode", 0)),          # rxdata(3)
-                               int(params.get("a_pw", 0) * 100),          # rxdata(4)
-                               int(params.get("v_pw", 0) * 100),          # rxdata(5)
-                               int(params.get("lrl", 60)),          # rxdata(6)
-                               int(params.get("a_amp", 0) * 10),    # rxdata(7)
-                               int(params.get("v_amp", 0) * 10),    # rxdata(8)
-                               int(params.get("a_ref", 0) / 10),    # rxdata(9)
-                               int(params.get("v_ref", 0) / 10),    # rxdata(10)
-                               int(params.get("a_sens", 0) * 10),   # rxdata(11)
-                               int(params.get("v_sens", 0) * 10),   # rxdata(12)
-                               int(params.get("recov", 0)),         # rxdata(13)
-                               int(params.get("resp_fact", 0)),     # rxdata(14)
-                               int(params.get("msr", 0)),           # rxdata(15)
-                               int(params.get("act_thresh", 0)),    # rxdata(16)
-                               int(params.get("react_time", 0)),    # rxdata(17)
-                               int(params.get("hyst", 0)))          # rxdata(18)
-            self.ser.write(data)
+            self.ser.reset_input_buffer()
+            # < = Little Endian, B = UChar, 16x = 16 Pad Bytes
+            # 2 bytes (Head+Code) + 16 bytes (Pad) = 18 Bytes
+            self.ser.write(struct.pack('<BB16x', 0x16, 0x33)) 
+            print("[Serial] Sent Start Egram (18 bytes)")
             return True
-        except Exception: return False
+        except Exception as e: 
+            print(f"[Serial] Error starting stream: {e}")
+            return False
+
+    def stop_egram_stream(self):
+        """Sends 18 bytes: 16 (Head), 52 (Code), + 16 Zeros."""
+        if not self.ser or not self.ser.is_open: return False
+        try:
+            self.ser.write(struct.pack('<BB16x', 0x16, 0x34))
+            print("[Serial] Sent Stop Egram (18 bytes)")
+            return True
+        except Exception as e:
+            print(f"[Serial] Error stopping stream: {e}")
+            return False
+
+    def read_egram_sample(self):
+        """
+        Reads 16 bytes total.
+        Bytes 0-7: Padding (Skipped)
+        Bytes 8-11: Atrial Float
+        Bytes 12-15: Ventricular Float
+        Returns (atr, vent).
+        """
+        if not self.ser or not self.ser.is_open: return None
+        
+        # Waiting for 16 bytes (8 padding + 8 data)
+        if self.ser.in_waiting < 16: return None
+
+        try:
+            packet = self.ser.read(16)
+            if len(packet) != 16: return None
+            
+            # Unpack: 8x (skip 8 bytes), then 2 floats (f, f)
+            val_atr, val_vent = struct.unpack('<8xff', packet)
+            
+            return (val_atr, val_vent)
+        except Exception as e:
+            print(f"[Serial] Egram read error: {e}")
+            return None
