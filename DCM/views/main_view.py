@@ -6,12 +6,12 @@ from typing import Dict
 PARAMETER_MAP = {
     "AOO": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width"],
     "VOO": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width"],
-    "AAI": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "PVARP", "Hysteresis"], 
+    "AAI": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "Hysteresis"], 
     "VVI": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis"], 
     # New Rate Adaptive Modes (Simplified)
     "AOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width"],
     "VOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width"],
-    "AAIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "PVARP", "Hysteresis"],
+    "AAIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "Hysteresis"],
     "VVIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis"],
 }
 
@@ -22,8 +22,8 @@ PARAMETER_VALIDATION_RULES = {
     "Maximum Sensor Rate": (50, 175, int),
     "Atrial Amplitude": (0.1, 5.0, float),
     "Ventricular Amplitude": (0.1, 5.0, float),
-    "Atrial Pulse Width": (1, 30, int),
-    "Ventricular Pulse Width": (1, 30, int),
+    "Atrial Pulse Width": (0.05, 2, float),
+    "Ventricular Pulse Width": (0.05, 2, float),
     "Atrial Sensitivity": (0, 5.0, float),
     "Ventricular Sensitivity": (0, 5.0, float),
     "VRP": (150, 500, int),

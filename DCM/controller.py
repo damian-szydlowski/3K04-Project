@@ -245,10 +245,16 @@ class DCMApp(ctk.CTk):
         if "error" in data:
             return f"Verification Failed:\n{data['error']}"
 
-        # --- Print PURE RAW DATA to Terminal ---
-        print(f"{data['raw']}")
+        # --- PRINT RAW BYTES TO TERMINAL ---
+        raw_str = data.get('raw', '')
+        if raw_str:
+            print("\n--- ECHO BYTES (Board Output) ---")
+            byte_list = [raw_str[i:i+2] for i in range(0, len(raw_str), 2)]
+            for idx, byte_val in enumerate(byte_list):
+                print(f"Byte {idx:02d}: 0x{byte_val}")
+            print("-------------------------------\n")
 
-        # --- Build GUI String ---
+        # --- GUI Display ---
         mode_id = data['mode']
         mode_names = {
             0: "AOO", 1: "VOO", 2: "AAI", 3: "VVI",
@@ -256,40 +262,25 @@ class DCMApp(ctk.CTk):
         }
         mode_str = mode_names.get(mode_id, f"Unknown ({mode_id})")
         
-        lines = [f"Raw: {data['raw']}", f"--- {mode_str} Verified ---", f"LRL:  {data['lrl']} ppm"]
-
-        # Helper flags
-        is_atrial = mode_id in [0, 2, 4, 6]
-        is_ventric = mode_id in [1, 3, 5, 7]
-        is_rate_adapt = mode_id in [4, 5, 6, 7]
-        is_inhibited = mode_id in [2, 3, 6, 7]
-
-        if is_rate_adapt:
-            lines.append(f"MSR:  {data['msr']} ppm")
-
-        if is_atrial:
-            lines.append(f"A-Amp: {data['a_amp']:.1f} V")
-            lines.append(f"A-PW:  {data['a_pw']} ms")
-            if is_inhibited:
-                lines.append(f"A-Sens: {data['a_sens']:.1f} mV")
-                lines.append(f"ARP:   {data['a_ref']} ms")
-
-        if is_ventric:
-            lines.append(f"V-Amp: {data['v_amp']:.1f} V")
-            lines.append(f"V-PW:  {data['v_pw']} ms")
-            if is_inhibited:
-                lines.append(f"V-Sens: {data['v_sens']:.1f} mV")
-                lines.append(f"VRP:   {data['v_ref']} ms")
-
-        if is_inhibited:
-            lines.append(f"Hyst:  {data['hyst']}")
-
-        if is_rate_adapt:
-            lines.append("--- Rate Adaptive ---")
-            lines.append(f"Act Thr: {data['act_thresh']}")
-            lines.append(f"React:   {data['react']}")
-            lines.append(f"Recov:   {data['recov']}")
-            lines.append(f"Resp:    {data['resp_fact']}")
+        lines = [
+            f"Raw: {raw_str}", 
+            f"--- {mode_str} Verified ---",
+            f"LRL:       {data['lrl']} ppm",
+            f"MSR:       {data['msr']} ppm",
+            f"A-Amp:     {data['a_amp']:.1f} V",
+            f"V-Amp:     {data['v_amp']:.1f} V",
+            f"A-PW:      {data['a_pw']} ms",
+            f"V-PW:      {data['v_pw']} ms",
+            f"A-Sens:    {data['a_sens']:.1f} mV",
+            f"V-Sens:    {data['v_sens']:.1f} mV",
+            f"ARP:       {data['a_ref']} ms",
+            f"VRP:       {data['v_ref']} ms",
+            f"Hyst:      {data['hyst']}",
+            f"Act Thr:   {data['act_thresh']}",
+            f"React:     {data['react']}",
+            f"Recov:     {data['recov']}",
+            f"Resp Fact: {data['resp_fact']}"
+        ]
 
         return "\n".join(lines)
 
