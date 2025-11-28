@@ -242,41 +242,94 @@ A dedicated signal shall enable or disable the front end sensing circuitry so AD
 
 \begin{table}[H]
 \centering
-\caption{DCM Requirements}
-\begin{tabular}{|c|p{5cm}|p{8cm}|}
-\hline
-ID & Requirement & Description / Rationale \\
-\hline
-DCM1 & User Authentication &
-The DCM GUI shall provide user registration and login functionality supporting up to ten stored users to control access to the programming interface. \\
-\hline
-DCM2 & Parameter Display and Editing &
-The DCM shall display and allow editing of pacemaker parameters such as LRL, URL, atrial and ventricular amplitude, pulse width, and sensitivity so that clinicians can program the device. \\
-\hline
-DCM3 & Status Indicators &
-The DCM shall provide visible indicators of device connection status and communication loss so the user remains aware of system state and faults. \\
-\hline
-\end{tabular}
+    \caption{DCM Requirements}
+    \begin{tabular}{|c|p{5cm}|p{8cm}|}
+    \hline
+    ID & Requirement & Description / Rationale \\
+    \hline
+    DCM1 & User Authentication &
+    The DCM GUI shall provide user registration and login functionality supporting up to ten stored users to control access to the programming interface. \\
+    \hline
+    DCM2 & Parameter Display and Editing &
+    The DCM shall display and allow editing of pacemaker parameters such as LRL, URL, atrial and ventricular amplitude, pulse width, and sensitivity so that clinicians can program the device. \\
+    \hline
+    DCM3 & Status Indicators &
+    The DCM shall provide visible indicators of device connection status and communication loss so the user remains aware of system state and faults. \\
+    \hline
+    \end{tabular}
 \end{table}
 
 \subsubsection{Serial Requirements}
 
-\Huge
-\textbf{NEW SECTION}
-\normalsize
+\begin{table}[H]
+    \centering
+    \caption{Serial \& Data Requirements}
+    \begin{tabular}{|c|p{5cm}|p{8cm}|}
+    \hline
+    ID & Requirement & Description / Rationale \\
+    \hline
+    COM1 & The DCM and Pacemaker shall communicate via a defined Serial Protocol (UART). & 
+    Establishes communication between the pacemaker and DCM, replacing the mock communication. \\
+    \hline
+    COM2 & The DCM shall verify the integrity of sent parameters by reading them back (Echo Verification) from the device. & Ensures safety by confirming data was stored correctly. \\
+    \hline
+    DAT1 & The system shall support programmable Pulse Widths from 1ms to 30ms (1ms increment). & Updated requirements from the previous deliverable. \\
+    \hline
+    DAT2 & The system shall support programmable Pulse Amplitudes from 0.1V to 5.0V (0.1V increment). & Updated requirements from the previous deliverable. \\
+    \hline
+    \end{tabular}
+\end{table}
 
 \subsubsection{Egram Requirements}
 
-\Huge
-\textbf{NEW SECTION}
-\normalsize
-
+\begin{table}[H]
+    \centering
+    \caption{Serial \& Data Requirements}
+    \begin{tabular}{|c|p{5cm}|p{8cm}|}
+    \hline
+    ID & Requirement & Description / Rationale \\
+    \hline
+    EKG1 & The DCM shall receive real-time electrogram (egram) data points from the pacemaker via Serial. & 
+    Allows the doctor to visualize heart activity. \\
+    \hline
+    EKG2 & The DCM shall plot two simultaneous graphs (Atrial and Ventricular) in real-time. & Required for diagnostic visibility. \\
+    \hline
+    \end{tabular}
+\end{table}
 
 \subsubsection{Rate Adaptivity Requirements}
 
-\Huge
-\textbf{NEW SECTION}
-\normalsize
+\begin{table}[H]
+    \centering
+    \caption{Rate Adaptivity Requirements}
+    \begin{tabular}{|c|p{5cm}|p{8cm}|}
+    \hline
+    ID & Requirement & Description / Rationale \\
+    \hline
+    EKG1 & The DCM shall receive real-time electrogram (egram) data points from the pacemaker via Serial. & 
+    Allows the doctor to visualize heart activity. \\
+    \hline
+    EKG2 & The DCM shall plot two simultaneous graphs (Atrial and Ventricular) in real-time. & Required for diagnostic visibility. \\
+    \hline
+    \end{tabular}
+\end{table}
+
+\subsubsection{Bonus Requirements}
+
+\begin{table}[H]
+    \centering
+    \caption{Bonus Requirements}
+    \begin{tabular}{|c|p{5cm}|p{8cm}|}
+    \hline
+    ID & Requirement & Description / Rationale \\
+    \hline
+    BON1 & The system shall implement DDDR mode with a programmable AV Delay. & 
+    Mimics natural dual-chamber heart rhythm. \\
+    \hline
+    BON2 & The system shall inhibit Ventricular pacing (but not Atrial) when the board pushbutton is held. & Simulates a specific failure or diagnostic state. \\
+    \hline
+    \end{tabular}
+\end{table}
 
 
 
