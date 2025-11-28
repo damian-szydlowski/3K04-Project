@@ -174,17 +174,19 @@ class DCMApp(ctk.CTk):
 
         try:
             # Gather parameters, defaulting to 0 if not present
+            # NOTE: We map "Upper Rate Limit" (View) to "msr" (Hardware) here if needed,
+            # or rely on "Maximum Sensor Rate" if that's what the view sends.
             params = {
                 "mode": mode_int,
                 "lrl": int(data.get("Lower Rate Limit", 60)),
-                "msr": int(data.get("Maximum Sensor Rate", 120)),
+                "msr": int(data.get("Maximum Sensor Rate", 120)), 
                 "a_amp": float(data.get("Atrial Amplitude", 0)),
                 "v_amp": float(data.get("Ventricular Amplitude", 0)),
                 "a_pw": int(data.get("Atrial Pulse Width", 0)),
                 "v_pw": int(data.get("Ventricular Pulse Width", 0)),
                 "a_sens": float(data.get("Atrial Sensitivity", 0)),
                 "v_sens": float(data.get("Ventricular Sensitivity", 0)),
-                "a_ref": int(data.get("ARP", 0) or data.get("PVARP", 0)), # Use ARP or PVARP
+                "a_ref": int(data.get("ARP", 0) or data.get("PVARP", 0)), 
                 "v_ref": int(data.get("VRP", 0)),
                 "hyst": int(data.get("Hysteresis", 0)),
                 # These were removed from GUI, send 0 as default
@@ -230,7 +232,6 @@ class DCMApp(ctk.CTk):
         else:
             return "Echo Failed: No Data Received"
 
-    # --- THIS WAS MISSING OR BROKEN ---
     def verify_parameters(self) -> str:
         """Requests cardiac parameters from board and returns formatted string."""
         if not self.connected:
@@ -241,24 +242,56 @@ class DCMApp(ctk.CTk):
         if data is None:
             return "Verification Failed:\nNo data received (Timeout)."
 
-        # Check for error key from SerialManager
         if "error" in data:
             return f"Verification Failed:\n{data['error']}"
 
-        # If success, format the data
-        return (f"--- Board Echo ---\n"
-                f"Mode: {data['mode']}\n"
-                f"LRL:  {data['lrl']} ppm\n"
-                f"MSR:  {data['msr']} ppm\n"
-                f"A-Amp: {data['a_amp']:.1f} V\n"
-                f"V-Amp: {data['v_amp']:.1f} V\n"
-                f"A-PW:  {data['a_pw']} ms\n"
-                f"V-PW:  {data['v_pw']} ms\n"
-                f"A-Sens: {data['a_sens']:.1f} mV\n"
-                f"V-Sens: {data['v_sens']:.1f} mV\n"
-                f"ARP:   {data['a_ref']} ms\n"
-                f"VRP:   {data['v_ref']} ms\n"
-                f"Hyst:  {data['hyst']}\n")
+        # --- Print PURE RAW DATA to Terminal ---
+        print(f"{data['raw']}")
+
+        # --- Build GUI String ---
+        mode_id = data['mode']
+        mode_names = {
+            0: "AOO", 1: "VOO", 2: "AAI", 3: "VVI",
+            4: "AOOR", 5: "VOOR", 6: "AAIR", 7: "VVIR"
+        }
+        mode_str = mode_names.get(mode_id, f"Unknown ({mode_id})")
+        
+        lines = [f"Raw: {data['raw']}", f"--- {mode_str} Verified ---", f"LRL:  {data['lrl']} ppm"]
+
+        # Helper flags
+        is_atrial = mode_id in [0, 2, 4, 6]
+        is_ventric = mode_id in [1, 3, 5, 7]
+        is_rate_adapt = mode_id in [4, 5, 6, 7]
+        is_inhibited = mode_id in [2, 3, 6, 7]
+
+        if is_rate_adapt:
+            lines.append(f"MSR:  {data['msr']} ppm")
+
+        if is_atrial:
+            lines.append(f"A-Amp: {data['a_amp']:.1f} V")
+            lines.append(f"A-PW:  {data['a_pw']} ms")
+            if is_inhibited:
+                lines.append(f"A-Sens: {data['a_sens']:.1f} mV")
+                lines.append(f"ARP:   {data['a_ref']} ms")
+
+        if is_ventric:
+            lines.append(f"V-Amp: {data['v_amp']:.1f} V")
+            lines.append(f"V-PW:  {data['v_pw']} ms")
+            if is_inhibited:
+                lines.append(f"V-Sens: {data['v_sens']:.1f} mV")
+                lines.append(f"VRP:   {data['v_ref']} ms")
+
+        if is_inhibited:
+            lines.append(f"Hyst:  {data['hyst']}")
+
+        if is_rate_adapt:
+            lines.append("--- Rate Adaptive ---")
+            lines.append(f"Act Thr: {data['act_thresh']}")
+            lines.append(f"React:   {data['react']}")
+            lines.append(f"Recov:   {data['recov']}")
+            lines.append(f"Resp:    {data['resp_fact']}")
+
+        return "\n".join(lines)
 
     # ---------------- Comms helpers ----------------
     def _push_comm_status_to_ui(self):
@@ -330,12 +363,16 @@ class DCMApp(ctk.CTk):
         return MAX_USERS
     
     def _play_connect_sound(self):
+            """Plays the connection audio in a separate thread to prevent UI freezing."""
             def speak():
                 try:
                     engine = pyttsx3.init()
+                    # Optional: Adjust rate/volume
                     engine.setProperty('rate', 175) 
                     engine.say("The pacemaking device has been connected")
                     engine.runAndWait()
                 except Exception as e:
                     print(f"Audio Error: {e}")
+            
+            # Run in a thread so the GUI doesn't freeze while speaking
             threading.Thread(target=speak, daemon=True).start()
