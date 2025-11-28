@@ -1,7 +1,7 @@
 import serial
 import serial.tools.list_ports
 import struct
-import time
+
 
 class SerialManager:
     def __init__(self, baudrate=115200):
@@ -9,7 +9,11 @@ class SerialManager:
         self.baudrate = baudrate
         self.HEADER = b'\x16'
         self.FMT_11_BYTES = '<BBBBBfH'
-        self.FMT_18_BYTES = '<BBBBBBBBBBBBBBBBBB' 
+        self.FMT_18_BYTES = '<BBBBBBBBBBBBBBBBBB'
+
+        # Each streaming egram frame is 4 bytes:
+        # 2 bytes m_vraw, 2 bytes f_marker
+        self.EGRAM_FRAME_SIZE = 4
 
     def get_ports(self):
         ports = serial.tools.list_ports.comports()
@@ -127,3 +131,48 @@ class SerialManager:
             self.ser.write(data)
             return True
         except Exception: return False
+
+    def read_egram_sample(self):
+        """
+        Try to read one egram sample from the UART.
+
+        Packet while streaming:
+          bytes 0-1: m_vraw, little endian, signed
+          bytes 2-3: f_marker, two ASCII characters
+
+        Returns (raw_value, marker_str) or None if no full frame is available.
+        """
+        if not self.ser or not self.ser.is_open:
+            print("[Serial] read_egram_sample called but serial is not open")
+            return None
+
+        if self.ser.in_waiting < self.EGRAM_FRAME_SIZE:
+            # print(f"[Serial] in_waiting={self.ser.in_waiting}, not enough for frame")
+            return None
+
+        try:
+            frame = self.ser.read(self.EGRAM_FRAME_SIZE)
+            print(f"[Serial] Raw frame bytes: {frame.hex(' ')}")  # debug
+
+            if len(frame) != self.EGRAM_FRAME_SIZE:
+                print(f"[Serial] Short frame, len={len(frame)}")
+                return None
+
+            raw_val = int.from_bytes(frame[0:2], byteorder="little", signed=True)
+
+            marker_bytes = frame[2:4]
+            try:
+                marker = marker_bytes.decode("ascii")
+            except UnicodeDecodeError:
+                marker = "--"
+
+            if marker not in {"--", "VS", "VP", "()"}:
+                print(f"[Serial] Unknown marker {marker_bytes!r}, forcing '--'")
+                marker = "--"
+
+            print(f"[Serial] Parsed sample raw={raw_val}, marker={marker}")
+            return raw_val, marker
+
+        except Exception as e:
+            print(f"[Serial] Egram read error: {e}")
+            return None

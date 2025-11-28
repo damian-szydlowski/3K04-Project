@@ -13,6 +13,8 @@ from models.serial_comms import SerialManager
 from views.login_views import Welcome, Register
 from views.main_view import MainFrame, DataEntry, DebugLED
 from views.egram_view import EgramView
+from models.egram_model import EgramModel
+
 
 # Appearance
 ctk.set_appearance_mode("System")
@@ -39,6 +41,8 @@ class DCMApp(ctk.CTk):
         self.user_model = UserModel()
         self.pacing_model = PacingModel()
         self.serial_manager = SerialManager() 
+        self.egram_model = EgramModel()
+
         self.current_user: str | None = None
 
         # --- ACCESSIBILITY STATE ---

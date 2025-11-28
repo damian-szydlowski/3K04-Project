@@ -22,6 +22,12 @@ class EgramView(ctk.CTkFrame):
         self.is_running = False
         self.start_time = time.time()
         self.annotations = []
+        # Buffers for plotting
+        self.t_data = []
+        self.atr_data = []
+        self.vent_data = []
+        self.marker_points = []
+
 
         # --- Layout ---
         self.grid_columnconfigure(0, weight=1)
@@ -119,17 +125,24 @@ class EgramView(ctk.CTkFrame):
 
     def _start_graph(self):
         self.start_time = time.time()
-        if hasattr(self, "mock_data"):
-             self.mock_data = {"t": [], "atr": [], "vent": [], "markers": []}
-        self.line_atr.set_data([], [])
-        self.line_vent.set_data([], [])
-        for txt in self.annotations: txt.remove()
+
+        # Reset plotting buffers
+        self.t_data.clear()
+        self.atr_data.clear()
+        self.vent_data.clear()
+        self.marker_points.clear()
+
+        # Clear any old text annotations
+        for txt in self.annotations:
+            txt.remove()
         self.annotations.clear()
-        
+
         self.is_running = True
         self.btn_start.configure(state="disabled")
         self.btn_stop.configure(state="normal")
         self._animate()
+
+
 
     def _stop_graph(self):
         self.is_running = False
@@ -148,63 +161,92 @@ class EgramView(ctk.CTkFrame):
         if not self.is_running or not self.winfo_exists():
             return
 
-        curr_time = time.time() - self.start_time
-        
-        # --- Mock Data ---
-        val = math.sin(curr_time * 5)
-        raw_vent = 4.5 if val > 0.9 else 2.0 + val
-        marker_vent = "VP" if val > 0.9 else "--"
+        serial_mgr = self.controller.serial_manager
+        egram_model = getattr(self.controller, "egram_model", None)
 
-        raw_atr = 2.5 + random.uniform(-0.5, 0.5)
-        marker_atr = "AS" if random.random() < 0.05 else "--"
+        # Drain all complete frames that are currently waiting
+        while True:
+            sample = serial_mgr.read_egram_sample()
+            if sample is None:
+                break
 
-        if not hasattr(self, "mock_data"):
-            self.mock_data = {"t": [], "atr": [], "vent": [], "markers": []}
-        
-        if len(self.mock_data["t"]) > 500: 
-            for key in self.mock_data: self.mock_data[key].pop(0)
+            raw_val, marker = sample
+            t_rel = time.time() - self.start_time
 
-        self.mock_data["t"].append(curr_time)
-        self.mock_data["atr"].append(raw_atr)
-        self.mock_data["vent"].append(raw_vent)
-        if marker_atr != "--": self.mock_data["markers"].append((curr_time, raw_atr + 0.3, marker_atr, "atr"))
-        if marker_vent != "--": self.mock_data["markers"].append((curr_time, raw_vent + 0.3, marker_vent, "vent"))
+            # Save to shared model for later saving or analysis
+            if egram_model is not None:
+                egram_model.append_sample(raw_val, marker)
 
-        try:
-            # 1. Update Lines
-            self.line_atr.set_data(self.mock_data["t"], self.mock_data["atr"])
-            self.line_vent.set_data(self.mock_data["t"], self.mock_data["vent"])
+            # Append to local plotting buffers
+            self.t_data.append(t_rel)
+            # We only have ventricular raw data from the spec
+            self.vent_data.append(raw_val)
+            # For now atrial trace is empty or you can mirror the same value
+            self.atr_data.append(0.0)
 
-            # 2. Update Markers
-            for txt in self.annotations: txt.remove()
-            self.annotations.clear()
+            if marker != "--":
+                self.marker_points.append((t_rel, raw_val, marker, "vent"))
 
-            visible_window = 5.0
-            min_t = curr_time - visible_window
-            
-            for m_t, m_y, m_text, m_chan in self.mock_data["markers"]:
-                if m_t >= min_t: # Optimization: only draw visible markers
-                    ax = self.ax_atr if m_chan == "atr" else self.ax_vent
-                    color = "red" if m_chan == "atr" else "blue"
-                    # FIX: clip_on=True ensures markers don't float outside the axes
-                    txt_obj = ax.text(m_t, m_y, m_text, fontsize=8, color=color, ha="center", 
-                                      fontweight="bold", clip_on=True)
-                    self.annotations.append(txt_obj)
+        # If no new data arrived this frame, just schedule the next call
+        if not self.t_data:
+            self.after(20, self._animate)
+            return
 
-            # 3. FIX: Lock Y-Axis Limits so dragging doesn't move the graph vertically
-            self.ax_atr.set_ylim(-1.0, 6.0)
+        # Keep only a sliding window of recent data
+        visible_window = 5.0   # seconds
+        min_t = self.t_data[-1] - visible_window
+
+        # Find first index that is inside the window
+        first_idx = 0
+        while first_idx < len(self.t_data) and self.t_data[first_idx] < min_t:
+            first_idx += 1
+
+        t_view = self.t_data[first_idx:]
+        atr_view = self.atr_data[first_idx:]
+        vent_view = self.vent_data[first_idx:]
+
+        # Update line data
+        self.line_atr.set_data(t_view, atr_view)
+        self.line_vent.set_data(t_view, vent_view)
+
+        # Redraw markers
+        for txt in self.annotations:
+            txt.remove()
+        self.annotations.clear()
+
+        for (m_t, m_y, m_text, m_chan) in self.marker_points:
+            if m_t >= min_t:
+                ax = self.ax_vent if m_chan == "vent" else self.ax_atr
+                color = "blue"
+                txt_obj = ax.text(
+                    m_t, m_y, m_text,
+                    fontsize=8, color=color, ha="center",
+                    fontweight="bold", clip_on=True,
+                )
+                self.annotations.append(txt_obj)
+
+        # Set fixed y limits or derive from data
+        if vent_view:
+            v_min = min(vent_view)
+            v_max = max(vent_view)
+            margin = max(10, 0.1 * max(abs(v_min), abs(v_max)))
+            self.ax_vent.set_ylim(v_min - margin, v_max + margin)
+        else:
             self.ax_vent.set_ylim(-1.0, 6.0)
 
-            # 4. Auto-Scroll (only if not manually panning)
-            if self.toolbar.mode == "":  
-                self.ax_atr.set_xlim(curr_time - 5, curr_time)
-                self.ax_vent.set_xlim(curr_time - 5, curr_time)
+        self.ax_atr.set_ylim(-1.0, 6.0)
 
+        # Auto scroll x axis if user is not panning
+        if self.toolbar.mode == "":
+            t_now = self.t_data[-1]
+            self.ax_atr.set_xlim(t_now - visible_window, t_now)
+            self.ax_vent.set_xlim(t_now - visible_window, t_now)
+
+        try:
             self.canvas.draw()
-            self.after(50, self._animate)
-            
         except tk.TclError:
             self.is_running = False
-        except Exception as e:
-            print(f"Graph Error: {e}")
-            self.is_running = False
+            return
+
+        # Schedule next frame
+        self.after(20, self._animate)
