@@ -172,10 +172,20 @@ class DCMApp(ctk.CTk):
         } 
         mode_int = mode_map.get(mode_str, 0)
 
+        # Threshold Mapping (Text -> Float)
+        thresh_map = {
+            "V-Low": 1.5, "Low": 2.0, "Med-Low": 2.5, "Med": 3.0, 
+            "Med-High": 3.5, "High": 4.0, "V-High": 4.5
+        }
+
         try:
+            # Handle Activity Threshold Conversion
+            act_str = data.get("Activity Threshold", "Med")
+            act_float = thresh_map.get(act_str, 3.0) # Default to Med if missing
+            # Scale by 10 (e.g., 1.5 -> 15)
+            act_thresh_uint8 = int(act_float * 10)
+
             # Gather parameters, defaulting to 0 if not present
-            # NOTE: We map "Upper Rate Limit" (View) to "msr" (Hardware) here if needed,
-            # or rely on "Maximum Sensor Rate" if that's what the view sends.
             params = {
                 "mode": mode_int,
                 "lrl": int(data.get("Lower Rate Limit", 60)),
@@ -189,11 +199,12 @@ class DCMApp(ctk.CTk):
                 "a_ref": int(data.get("ARP", 0) or data.get("PVARP", 0)), 
                 "v_ref": int(data.get("VRP", 0)),
                 "hyst": int(data.get("Hysteresis", 0)),
-                # These were removed from GUI, send 0 as default
-                "recov": 0,
-                "resp_fact": 0,
-                "act_thresh": 0,
-                "react_time": 0
+                
+                # New Rate Adaptive Params
+                "recov": int(data.get("Recovery Time", 0)),
+                "resp_fact": int(data.get("Response Factor", 0)),
+                "act_thresh": act_thresh_uint8,
+                "react_time": int(data.get("Reaction Time", 0))
             }
 
             success = self.serial_manager.send_params(params)

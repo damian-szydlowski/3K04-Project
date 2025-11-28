@@ -2,20 +2,32 @@ import customtkinter as ctk
 from tkinter import messagebox
 from typing import Dict
 
-# 1. Update the Parameter Map (Removed Rate Smoothing & Rate Adaptive Params)
+# --- ADDED: Activity Threshold Mapping ---
+ACT_THRESH_MAP = {
+    "V-Low": 1.5,
+    "Low": 2.0,
+    "Med-Low": 2.5,
+    "Med": 3.0,
+    "Med-High": 3.5,
+    "High": 4.0,
+    "V-High": 4.5
+}
+
+# 1. Update the Parameter Map (Added Rate Adaptive Params)
 PARAMETER_MAP = {
     "AOO": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width"],
     "VOO": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width"],
     "AAI": ["Lower Rate Limit", "Upper Rate Limit", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "Hysteresis"], 
     "VVI": ["Lower Rate Limit", "Upper Rate Limit", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis"], 
-    # New Rate Adaptive Modes (Simplified)
-    "AOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width"],
-    "VOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width"],
-    "AAIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "Hysteresis"],
-    "VVIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis"],
+    
+    # Updated Rate Adaptive Modes with new parameters
+    "AOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
+    "VOOR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
+    "AAIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity", "ARP", "Hysteresis", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
+    "VVIR": ["Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate", "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity", "VRP", "Hysteresis", "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"],
 }
 
-# 2. Update Validation Rules (Removed deleted parameters)
+# 2. Update Validation Rules (Added ranges from image)
 PARAMETER_VALIDATION_RULES = {
     "Lower Rate Limit": (30, 175, int),
     "Upper Rate Limit": (50, 175, int),
@@ -30,6 +42,12 @@ PARAMETER_VALIDATION_RULES = {
     "ARP": (150, 500, int),
     "PVARP": (150, 500, int),
     "Hysteresis": (0, 1, int),
+    
+    # New Rules based on image ranges
+    "Reaction Time": (10, 50, int),    # 10-50 sec
+    "Response Factor": (1, 16, int),   # 1-16
+    "Recovery Time": (2, 16, int),     # 2-16 min
+    # Activity Threshold is validated via Dropdown selection, no numeric range check needed here
 }
 
 # --- Shared Accessibility Helper ---
@@ -160,41 +178,50 @@ class DataEntry(ctk.CTkFrame):
         controls_frame = ctk.CTkScrollableFrame(content_split, label_text="Parameters")
         controls_frame.pack(side="left", fill="both", expand=True, padx=(0, 5))
 
-        # Right: Echo Text Window (FIXED)
-        # Create a container frame for the right side
+        # Right: Echo Text Window
         right_frame = ctk.CTkFrame(content_split, fg_color="transparent")
         right_frame.pack(side="right", fill="y", padx=(5, 0))
 
-        # Add Label manually since CTkTextbox doesn't support label_text
         self.echo_label = ctk.CTkLabel(right_frame, text="Echo Verification", font=ctk.CTkFont(size=14, weight="bold"))
         self.echo_label.pack(side="top", pady=(0, 5), anchor="w")
 
-        # Add Textbox
         self.echo_textbox = ctk.CTkTextbox(right_frame, width=200)
         self.echo_textbox.pack(side="top", fill="both", expand=True)
         
         self.echo_textbox.insert("0.0", "Click 'Verify Sent'\nto read back parameters.")
         self.echo_textbox.configure(state="disabled")
 
-        # Full superset of parameters
+        # Full superset of parameters (Updated with new ones)
         param_list = [
             "Lower Rate Limit", "Upper Rate Limit", "Maximum Sensor Rate",
             "Atrial Amplitude", "Atrial Pulse Width", "Atrial Sensitivity",
             "Ventricular Amplitude", "Ventricular Pulse Width", "Ventricular Sensitivity",
-            "VRP", "ARP", "PVARP", "Hysteresis"
+            "VRP", "ARP", "PVARP", "Hysteresis",
+            "Activity Threshold", "Reaction Time", "Response Factor", "Recovery Time"
         ]
 
         for i, param_name in enumerate(param_list):
             rule = PARAMETER_VALIDATION_RULES.get(param_name)
             label_text = f"{param_name}:"
+            
             if rule:
                 min_val, max_val, _ = rule
                 label_text = f"{param_name} ({min_val}-{max_val}):"
+            elif param_name == "Activity Threshold":
+                 label_text = f"{param_name}:"
             
             label = ctk.CTkLabel(controls_frame, text=label_text)
             label.grid(row=i, column=0, sticky="e", padx=5, pady=5)
             
-            entry = ctk.CTkEntry(controls_frame, width=150)
+            if param_name == "Activity Threshold":
+                # Create Dropdown for Activity Threshold
+                entry = ctk.CTkComboBox(controls_frame, values=list(ACT_THRESH_MAP.keys()), width=150)
+                # Default to 'Med'
+                entry.set("Med")
+            else:
+                # Standard Entry for others
+                entry = ctk.CTkEntry(controls_frame, width=150)
+
             entry.grid(row=i, column=1, sticky="w", padx=5, pady=5)
             
             self.param_widgets[param_name] = (label, entry)
@@ -225,7 +252,6 @@ class DataEntry(ctk.CTkFrame):
         for btn in [self.back_btn, self.logout_btn, self.save_btn, self.send_btn, self.verify_btn]:
             btn.configure(font=normal_font)
 
-    # ... rest of methods (set_pacing_mode, _do_save, etc) remain unchanged ...
     def set_pacing_mode(self, mode: str, settings: Dict[str, str]):
         self.current_mode = mode 
         self.mode_var.set(f"Editing: {mode}")
@@ -237,9 +263,18 @@ class DataEntry(ctk.CTkFrame):
                 label.grid()
                 entry.grid()
                 entry.configure(state="normal")
-                entry.delete(0, 'end')
+                
+                # Check if it's a combobox or entry to clear/set value
+                if isinstance(entry, ctk.CTkEntry):
+                    entry.delete(0, 'end')
+                
                 saved_value = settings.get(param_name, "") 
-                entry.insert(0, saved_value)
+                
+                if saved_value:
+                    if isinstance(entry, ctk.CTkComboBox):
+                        entry.set(saved_value)
+                    else:
+                        entry.insert(0, saved_value)
             else:
                 label.grid_remove()
                 entry.grid_remove()
@@ -270,6 +305,13 @@ class DataEntry(ctk.CTkFrame):
             self.controller.handle_send_parameters(self.current_mode, data)
 
     def _validate_entry(self, name: str, value_str: str) -> bool:
+        # Special validation for Activity Threshold
+        if name == "Activity Threshold":
+            if value_str not in ACT_THRESH_MAP:
+                messagebox.showerror("Invalid Input", "Please select a valid Activity Threshold.")
+                return False
+            return True
+
         rule = PARAMETER_VALIDATION_RULES.get(name)
         if not rule:
             return True
@@ -287,8 +329,9 @@ class DataEntry(ctk.CTkFrame):
         
         if name == "Upper Rate Limit":
             try:
-                if self.param_widgets["Lower Rate Limit"][1].cget("state") != "disabled":
-                    lrl_val = int(self.param_widgets["Lower Rate Limit"][1].get())
+                lrl_widget = self.param_widgets.get("Lower Rate Limit")
+                if lrl_widget and lrl_widget[1].cget("state") != "disabled":
+                    lrl_val = int(lrl_widget[1].get())
                     if value < lrl_val:
                         messagebox.showerror("Invalid Input", "Error: URL cannot be less than LRL.")
                         return False
