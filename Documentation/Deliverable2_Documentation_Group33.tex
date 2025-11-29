@@ -33,16 +33,29 @@
     backgroundcolor=\color{gray!10}
 }
 
-\renewcommand\theparagraph{\thesubsubsection.\arabic{paragraph}}
+\titleclass{\subsubsubsection}{straight}[\subsection]
+
+\newcounter{subsubsubsection}[subsubsection]
+\renewcommand\thesubsubsubsection{\thesubsubsection.\arabic{subsubsubsection}}
+\renewcommand\theparagraph{\thesubsubsubsection.\arabic{paragraph}}
+\titleformat{\subsubsubsection}
+  {\normalfont\normalsize\bfseries}{\thesubsubsubsection}{1em}{}
+\titlespacing*{\subsubsubsection}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
 \makeatletter
 \renewcommand\paragraph{\@startsection{paragraph}{5}{\z@}%
   {3.25ex \@plus1ex \@minus.2ex}%
   {-1em}%
   {\normalfont\normalsize\bfseries}}
-
-\def\toclevel@paragraph{4}
-\def\l@paragraph{\@dottedtocline{4}{7em}{4em}}
+\renewcommand\subparagraph{\@startsection{subparagraph}{6}{\parindent}%
+  {3.25ex \@plus1ex \@minus .2ex}%
+  {-1em}%
+  {\normalfont\normalsize\bfseries}}
+\def\toclevel@subsubsubsection{4}
+\def\toclevel@paragraph{5}
+\def\l@subsubsubsection{\@dottedtocline{4}{7em}{4em}}
+\def\l@paragraph{\@dottedtocline{5}{10em}{5em}}
 
 \makeatother
 
@@ -487,13 +500,227 @@ thus making the code easier to maintain, debug and safer.
 \newpage
 \subsection{Simulink Design - Deliverable 2}
 
+\subsubsection{General Overview}
 
+The below image shows a high-level overview of the Simulink model with all subsystems. The newly added modules include 
+the serial communication and rate adaptive logic modules for the newly added serial communication with DCM and pacing modes. 
+The input monitored variables now also includes accelerometer values for adaptive rates based on accelerometer values. 
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{simwholeview2.png}
+        \caption{General Overview of Simulink Model - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Serial Communication Module}
+
+The serial communication module can be seen in the figure below. The communication input block is stateflow 
+logic that handles how the rxdata being transmitted from the serial recieve block is being processed and unpacked and 
+the echo function. The communication output is how data is outputted from the pacemaker back to the DCM via the send\_params function packing all data 
+back and sending via the serial transmit block. For simplicity, we chose to use a stateflow logic simuilar to that of tutorial 
+3. 
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.9\textwidth]{sercomsim.png}
+        \caption{Serial Communication Module Simulink - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.9\textwidth]{comminput.png}
+        \caption{Communication Input Block - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.9\textwidth]{sendparams.png}
+        \caption{Send Parameters Block - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\newpage
 \subsubsection{Rate Response}
+
+\subsubsubsection{All Modes}
+
+The requirements for the newly added modes were fulfilled and can be seen in the below images. 
+Building off the stateflow logic in deliverable 1, the addition of modes was easily added to the default reset state 
+block. 
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.85\textwidth]{allmodes.png}
+        \caption{All Modes and Default State Stateflow Diagram - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsubsection{Mode Stateflow}
+Below are the stateflows for each rate adaptive modes:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.6\textwidth]{AOOR.png}
+        \caption{AOOR Stateflow - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.6\textwidth]{VOOR.png}
+        \caption{VOOR Stateflow - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.9\textwidth]{AAIR.png}
+        \caption{AAIR Stateflow - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.9\textwidth]{VVIR.png}
+        \caption{VVIR Stateflow - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+The logic of these states are similar to that of the regular modes e.g AOO, VVI except are governed by the 
+rate\_adapt\_interval. This changes the effective BPM of pacing. The Simulink calculations for these modes can be seen below:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{rateadaptlog.png}
+        \caption{Rate Adaptive Logic - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+It takes in newly added parameters maximum sensor rate, response factor, activity threshold and activity level and 
+outputs a rate adaptive interval value with constraints and parameters. The logic for desired pace is shown below:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{despace.png}
+        \caption{Desired Pace Logic - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+The saturation dynamic block prevents the desired pace rate from being too low, below the low rate, or being too high, above the max sensor 
+rate. This calculates the desired pacing rate which is fed into the rate adaptive interval block which can be seen below:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{rateadaptblock.png}
+        \caption{Rate Adaptive Interval Block - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+This block includes more logic within itself that resets the desired pace rates when swapping between 
+different rate adaptive modes. The logic of which can be seen in the stateflow logic below:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.9\textwidth]{stateflowratedapt.png}
+        \caption{Stateflow for Mode Switching of Rate Adaptive Logic - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=0.9\textwidth]{modeswitchrateadap.png}
+        \caption{Rate Adaptive Mode Reset When Switching Logic - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+The way activity level for the logic above is measured is through the accelerometer. This is 
+computed with the following block diagram:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{accel.png}
+        \caption{Accelerometer Reading Block Diagram - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+The activity level is calculated by finding the magnitude of x and y values first, then adding the absolute z value, normalizing these vales. 
+The reason is because we want to treat moving diagonally on the xy-plane to be the same as moving straight in x or y, since the magnitude is the same.
+The z-value is added for the case the patient jumps or walks up stairs. 
+
+The sampling rate of the ventricular and atrial inputs is faster, 0.001s, to produce more accurate values in 
+AAI and VVI modes. The accelerometer sampling rate is lower and is unable to sample faster than the value shown,
+0.01s. 
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{acceldata.png}
+        \caption{Accelerometer and Inputs Sampling Rates - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+Furthermore, this calculation uses a moving custom moving average block and the calculation of such can be seen below. This is to 
+smooth out the signal from small deviations or noise in the measurements of acceleration. 
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{movavg.png}
+        \caption{Custom Moving Average - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\newpage
+\subsubsection{Outputs}
+
+The ouputs of the Simulink is handled in the outputs subsystem. The subsystem is shown below:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{outputs.png}
+        \caption{Outputs Block - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsubsection{Ventricular Inhibiting}
+
+This block includes a push button input that inhibits the ventricular pulsing. If held down, it prevents the 
+ventricular part of the pacemaker from pacing. This is a safety feature that allows for quick emergency 
+shutoff incase of malfunction. The logic for this block is shown below:
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{ventinhib.png}
+        \caption{Ventricular Inhibiting Logic - Deliverable 2}
+    \end{figure}
+\end{tcolorbox}
 
 \newpage
 \subsection{DCM Design}
 
-The design of the DCM has 3 seperate sections; the \textbf{model, view and controller.} 
+The design of the DCM has 3 seperate sections; the \textbf{model, view and controller.} This is to allow modularity and seperation of 
+different functionalities of the DCM from one another. For example, adding functionality can be as simple as making and includiung another class 
+in another file. 
 
 \subsubsection{Model}
 The model section handles the applications data and user logic. It does not interact directly with the interface but 
@@ -623,6 +850,7 @@ are an explanation of each view:
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsection{DCM \& Serial Design - Deliverable 2}
 
 The DCM was changed up in deliverable 2 to allow for serial communication and more modes to be used. 
@@ -643,7 +871,11 @@ This is accompanied by a new model in the structure of the DCM, serial\_comms.py
 
 \subsubsection{Serial Packet Structure}
 With the addition of additional parameters a data conversion table is used  
-to organize the multiple data types being sent. This can be seen in the table below:
+to organize the multiple data types being sent. This can be seen in the table below. The chosen variables 
+are due that are sent are due to the fact the increments within each range fit in a Uint8 format. This allows for the 
+parameter data to be scaled in code to fit in a Uint8 format then scaled back and typecasted in the Simulink. This datatype choice reduces the amount of 
+data being transfered while maintaining the same amount of fidelity. Some parameters such as activity threshold and mode are 
+mapped to integers. 
 
 \begin{table}[H]
     \caption{Parameter Settings}
@@ -711,11 +943,55 @@ to organize the multiple data types being sent. This can be seen in the table be
         \multicolumn{3}{p{7.5cm}|}{OFF, DDD, VDD, DDI, DOO, AOO, AAI, VOO, VVI, AAT, VVT, DDDR, VDDR, DDIR, DOOR, AOOR, AAIR, VOOR, VVIR} & 
         N/A & Uint8 & 1 \\ 
         \hline
-
-\end{tabular}
-
+    \end{tabular}
 \end{table}
 
+\newpage
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{simconv.png}
+        \caption{Conversion of Data In Simulink}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{lstlisting}[caption={Conversion of Data in DCM}]
+    def send_params(self, params: dict):
+        if not self.ser or not self.ser.is_open: return False
+        try:
+            data = struct.pack(self.FMT_18_BYTES, 
+                               0x16, 0x55, 
+                               int(params.get("mode", 0)),
+                               int(params.get("a_pw", 0) * 100),
+                               int(params.get("v_pw", 0) * 100),
+                               int(params.get("lrl", 60)),
+                               int(params.get("a_amp", 0) * 10),
+                               int(params.get("v_amp", 0) * 10),
+                               int(params.get("a_ref", 0) / 10),
+                               int(params.get("v_ref", 0) / 10),
+                               int(params.get("a_sens", 0) * 10),
+                               int(params.get("v_sens", 0) * 10),
+                               int(params.get("recov", 0)),
+                               int(params.get("resp_fact", 0)),
+                               int(params.get("msr", 0)),
+                               int(params.get("act_thresh", 0)),
+                               int(params.get("react_time", 0)),
+                               int(params.get("hyst", 0)))
+            self.ser.write(data)
+            return True
+        except Exception: return False
+\end{lstlisting}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering 
+        \includegraphics[width=\textwidth]{modemapping.png}
+        \caption{Mapping of Modes to Integers In Simulink}
+    \end{figure}
+\end{tcolorbox}
+
+
+\newpage 
 \subsubsection{Main View Design \& Decisions}
 Building on top of the previous design the main page was given plenty of new features. The main page can be seen 
 in the screenshot below:
@@ -976,7 +1252,7 @@ section will be more comprehensive.
 \section{Requirements Potential Changes}
 
 \begin{enumerate}[label=]
-    \item \textbf{Pacing Modes:} 
+    \item \textbf{Pacing Modes:} Addition of all pacing modes such as dual chamber modes.
 
 \end{enumerate}
 
