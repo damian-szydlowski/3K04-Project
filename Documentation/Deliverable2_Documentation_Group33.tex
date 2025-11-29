@@ -1543,6 +1543,436 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\subsection{Testing of AOOR}
+
+\subsubsection{Test 1: AOOR at Rest (No Movement)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality at rest.
+    \item \textbf{Input Conditions:} General Inputs mode = 4 (AOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs.
+    \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heartbeats in the atrium signal.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{aoort1.png}
+        \caption{AOOR at Rest Ignoring Pulses}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{aoort1.png}
+        \caption{AOOR at Resting Pace Rate}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 2: AOOR with Increased Movement}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality while the patient has increased movement.
+    \item \textbf{Input Conditions:} General Inputs mode = 4 (AOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Also the pacemaker was shook at a medium rate for 5 seconds.
+    \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heartbeats, at a faster rate than resting in the atrium signal.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{aoort3.png}
+        \caption{AOOR at Increased Pace Rate from Movement}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 3: AOOR Maximum Sensor Rate}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality while the patient has increased movement for a prolonged period of time.
+    \item \textbf{Input Conditions:} General Inputs mode = 4 (AOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Also the pacemaker was shook vigorously for 30 seconds.
+    \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heartbeats, at the capped maximum sensor rate in the atrium signal.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{aoort4.png}
+        \caption{AOOR at Maximum Pace Rate}
+    \end{figure}
+\end{tcolorbox}
+
+\subsection{Testing of VOOR}
+
+\subsubsection{Test 1: VOOR at Rest (No Movement)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic VOOR functionality.
+    \item \textbf{Input Conditions:} General Inputs mode = 5 (VOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs.
+    \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heartbeats in the ventricular signal.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{voort1.png}
+        \caption{VOOR at Rest and No Natural Heart Rate}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{voort2.png}
+        \caption{VOOR at Rest with a Natural Heart Rate}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 2: VOOR with Increased Movement}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic VOOR functionality while the patient has increased movement.
+    \item \textbf{Input Conditions:} General Inputs mode = 5 (VOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Also the pacemaker was shook at a medium rate for 5 seconds.
+    \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heartbeats in the ventricular signal, at a higher pace then resting.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{voort3.png}
+        \caption{VOOR with an Increased Heart Rate from Movement}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 3: VOOR Maximum Sensor Rate}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic VOOR functionality while the patient has increased movement for prolonged period of time.
+    \item \textbf{Input Conditions:} General Inputs mode = 5 (VOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Also the pacemaker was shook vigorously for 30 seconds.
+    \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heartbeats, at the capped maximum sensor rate in the ventricular signal.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{voort4.png}
+        \caption{VOOR at Maximum Sensor Rate}
+    \end{figure}
+\end{tcolorbox}
+
+\subsection{Testing of AAIR}
+
+\subsubsection{Test 1: AAIR at Rest (0 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at rest with no natural heart beat of 0 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 6 (AAIR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Natural heart rate was set to 0 bpm.
+    \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heartbeats in the atrium signal.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{aairt1.png}
+        \caption{AAIR with no Natural Heart Rate at Rest}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 2: AAIR at Rest (45 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at rest with natural heart beat at 45 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 6 (AAIR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Natural heart rate set to 45 bpm.
+    \item \textbf{Expected Output:} The pacemaker should pulse after the refractory period expires. An output of blue pulses right before the natural red pulses is expected.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{aairt2.png}
+        \caption{AAIR with a Natural Heart Rate at 45BPM at Rest}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 3: AAIR at Rest (75 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at rest with natural heartbeat of 75 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 6 (AAIR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Natural heart rate was set to 75 BPM.
+    \item \textbf{Expected Output:} As a nominal heart rate is being inputted, the pacemaker should not be delivering pacing pulses as the simulated heart rate is nominal and healthy.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{aairt3.png}
+        \caption{AAIR with a Natural Heart Rate at 75BPM at Rest}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 4: AAIR with Increased Movement (45 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at increased movement with natural heartbeat of 45 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 6 (AAIR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Natural heart rate was set to 45 BPM. Also the pacemaker was shaken at a medium rate for 5 seconds.
+    \item \textbf{Expected Output:} Since the activity level increases, the blue pulse paces need to occur faster to keep up with the increased movement. The blue pulses should have an increased bpm, while still reacting to the natural heart, pulsing when refractory period expires, in the atrium.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{aairt4.png}
+        \caption{AAIR with a Natural Heart Rate at 45BPM at with Movement}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 5: AAIR Maximum Sensor Rate (45 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at increased movement over a prolonged period with natural heartbeat of 45 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 6 (AAIR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Natural heart rate was set to 45 BPM. Also the pacemaker was shook vigorously for 30 seconds.
+    \item \textbf{Expected Output:} The pacemaker should be pacing at the max sensor rate, of 120bpm. An output of 2 blue pulses right before the natural red pulses is expected, since the bpm is double that of resting, in the atrium.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{aairt5.png}
+        \caption{AAIR with a Natural Heart Rate at 47BPM at Max Sensor Rate}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 6: AAIR Maximum Sensor Rate (75 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at increased movement over a prolonged period with natural heartbeat of 75 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 6 (AAIR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Natural heart rate was set to 75 BPM. Also the pacemaker was shook vigorously for 30 seconds.
+    \item \textbf{Expected Output:} The pacemaker should pulse after the refractory period expires. An output of blue pulses right before the natural red pulses is expected in the atrium.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{aairt6.png}
+        \caption{AAIR with a Natural Heart Rate at 75BPM at Max Sensor Rate}
+    \end{figure}
+\end{tcolorbox}
+
+\subsection{Testing of VVIR}
+
+\subsubsection{Test 1: VVIR at Rest (0 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at rest with no natural heartbeat of 0 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 7 (VVIR), hysteresis = 0 (off), standard ventricular inputs as well as standard rate adaptive inputs. Natural heart rate was set to 0 bpm.
+    \item \textbf{Expected Output:} Consistent, evenly spaced pulses in the output with disregard for natural heartbeats in the ventricular signal.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{vvirt1.png}
+        \caption{VVIR with no Nratural Heart Rate at Rest}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 2: VVIR at Rest (45 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at rest with natural heart beat at 45 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 7 (VVIR), hysteresis = 0 (off), standard ventricular inputs as well as standard rate adaptive inputs. Natural heart rate set to 45 bpm.
+    \item \textbf{Expected Output:} The pacemaker should pulse after the refractory period expires. An output of blue pulses right before the natural red pulses is expected in the ventricular.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{vvirt2.png}
+        \caption{VVIR with a Nratural Heart Rate of 45BPM at Rest}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 3: VVIR at Rest (75 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at rest with natural heartbeat of 75 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 7 (VVIR), hysteresis = 0 (off), standard ventricular inputs as well as standard rate adaptive inputs. Natural heart rate was set to 75 BPM.
+    \item \textbf{Expected Output:} As a nominal heart rate is being inputted, the pacemaker should not be delivering pacing pulses as the simulated heart rate is nominal and healthy.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{vvirtt3.png}
+        \caption{VVIR with a Nratural Heart Rate of 75BPM at Rest}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 4: VVIR with Increased Movement (45 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at increased movement with natural heartbeat of 45 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 7 (VVIR), hysteresis = 0 (off), standard ventricular inputs as well as standard rate adaptive inputs. Natural heart rate was set to 45 BPM. Also the pacemaker was shaken at a medium rate for 5 seconds.
+    \item \textbf{Expected Output:} Since the activity level increases, the blue pulse paces need to occur faster to keep up with the increased movement. The blue pulses should have an increased bpm, while still reacting to the natural heart, pulsing when refractory period expires, in the ventricular.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{vvirt4.png}
+        \caption{VVIR with a Nratural Heart Rate of 45BPM with Movement}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 5: VVIR Maximum Sensor Rate (45 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at increased movement over a prolonged period with natural heartbeat of 45 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 7 (VVIR), hysteresis = 0 (off), standard ventricular inputs as well as standard rate adaptive inputs. Natural heart rate was set to 45 BPM. Also the pacemaker was shook vigorously for 30 seconds.
+    \item \textbf{Expected Output:} The pacemaker should be pacing at the max sensor rate, of 120bpm. An output of 2 blue pulses right before the natural red pulses is expected, since the bpm is double that of resting, in the ventricular.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{vvirt5.png}
+        \caption{VVIR with a Nratural Heart Rate of 45BPM with Max Sensor Rate}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 6: VVIR Maximum Sensor Rate (75 BPM)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at increased movement over a prolonged period with natural heartbeat of 75 bpm.
+    \item \textbf{Input Conditions:} General Inputs mode = 7 (VVIR), hysteresis = 0 (off), standard ventricular inputs as well as standard rate adaptive inputs. Natural heart rate was set to 75 BPM. Also the pacemaker was shook vigorously for 30 seconds.
+    \item \textbf{Expected Output:} The pacemaker should pulse after the refractory period expires. An output of blue pulses right before the natural red pulses is expected in the ventricular.
+    \item \textbf{Actual Output:} Since the refractory period is longer for ventricular by default (320 instead of 250) the refractory period expires right before the natural pulse on occasion, which is why we see the pattern. This is expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{vvirt6.png}
+        \caption{VVIR with a Nratural Heart Rate of 75BPM with Max Sensor Rate}
+    \end{figure}
+\end{tcolorbox}
+
+\subsection{Rate Adaptive Tuning Testing}
+
+\subsubsection{Test 1: Recovery Time Testing (30 seconds)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality for the recovery time tuning.
+    \item \textbf{Input Conditions:} General Inputs mode = 4 (AOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Also the pacemaker was shook at a medium rate for 30 seconds. Recovery time was set to 0.5 (translates to 30 seconds).
+    \item \textbf{Expected Output:} After reaching the upper rate limit, it should take 30 seconds for the pacemaker to return to the lower rate limit.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{rec1.png}
+        \caption{AAIR at Time 0s After Movement}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{rec2.png}
+        \caption{AAIR at Time 30s After Movement}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 2: Recovery Time Testing (60 seconds)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality for the recovery time tuning.
+    \item \textbf{Input Conditions:} General Inputs mode = 4 (AOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Also the pacemaker was shook at a medium rate for 30 seconds. Recovery time was set to 1 (translates to 60 seconds).
+    \item \textbf{Expected Output:} After reaching the upper rate limit, it should take 60 seconds for the pacemaker to return to the lower rate limit.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{rec11.png}
+        \caption{AAIR at Time 0s After Movement}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{rec12.png}
+        \caption{AAIR at Time 60s After Movement}
+    \end{figure}
+\end{tcolorbox}
+
+
+\subsubsection{Test 3: Reaction Time Testing (10 seconds)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality for the reaction time tuning.
+    \item \textbf{Input Conditions:} General Inputs mode = 4 (AOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Also the pacemaker was shook at a medium rate until the maximum sensor rate. Recovery time was set to 10 seconds.
+    \item \textbf{Expected Output:} The pacemaker should reach the upper rate limit in 10 seconds.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{rect1.png}
+        \caption{AAIR at Time 0s (Before Movement)}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{rect2.png}
+        \caption{AAIR After 10s of Shaking}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Test 4: Reaction Time Testing (30 seconds)}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality for the reaction time tuning.
+    \item \textbf{Input Conditions:} General Inputs mode = 4 (AOOR), hysteresis = 0 (off), standard atrial inputs as well as standard rate adaptive inputs. Also the pacemaker was shook at a medium rate until the maximum sensor rate. Recovery time was set to 30 seconds.
+    \item \textbf{Expected Output:} The pacemaker should reach the upper rate limit in 30 seconds.
+    \item \textbf{Actual Output:} Output tested exactly as expected.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{rect12.png}
+        \caption{AAIR at Time 0s (Before Movement)}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{rect22.png}
+        \caption{AAIR After 30s of Shaking}
+    \end{figure}
+\end{tcolorbox}
+
 \newpage
 \subsection{DCM Testing}
 
@@ -1664,10 +2094,6 @@ from the previous test.
         \caption{Stored Users File}
     \end{figure}
 \end{tcolorbox}
-
-\subsection{Serial Testing}
-
-\subsection{Rate Adaptive Test}
 
 \newpage
 \section{GenAI Usage}
