@@ -86,10 +86,10 @@
         3K04 Deliverable 2: Documentation
         \vspace{1cm}\\
         \huge
-        Group 33
+        Group 37
         \normalsize
         \vfill
-        Last Updated: 2025-11-27
+        Last Updated: 2025-11-28
     \end{center}
  \end{titlepage}
 
@@ -331,25 +331,6 @@ A dedicated signal shall enable or disable the front end sensing circuitry so AD
     \hline
     \end{tabular}
 \end{table}
-
-\subsection{Bonus Requirements}
-
-\begin{table}[H]
-    \centering
-    \caption{Bonus Requirements}
-    \begin{tabular}{|c|p{5cm}|p{8cm}|}
-    \hline
-    ID & Requirement & Description / Rationale \\
-    \hline
-    BON1 & The system shall implement DDDR mode with a programmable AV Delay. & 
-    Mimics natural dual-chamber heart rhythm. \\
-    \hline
-    BON2 & The system shall inhibit Ventricular pacing (but not Atrial) when the board pushbutton is held. & Simulates a specific failure or diagnostic state. \\
-    \hline
-    \end{tabular}
-\end{table}
-
-
 
 \newpage
 \section{Design}
@@ -1196,6 +1177,14 @@ section will be more comprehensive.
             return {"red": u[0], "green": u[1], "blue": u[2], "switch_time": u[3], "off_time": u[4]}
         except Exception: return None
     \end{lstlisting}
+
+    \begin{tcolorbox}
+        \begin{figure}[H]
+            \centering 
+            \includegraphics[width=\textwidth]{echover.png}
+            \caption{Echo Appearing in DCM}
+        \end{figure}
+    \end{tcolorbox}
 \end{enumerate}
 
 \subsubsection{Reset Between Mode Switching}
@@ -1244,15 +1233,33 @@ section will be more comprehensive.
     \end{lstlisting}
 \end{enumerate}
 
+\subsubsection{Push Button Shutoff}
+\begin{enumerate}[label=]
+    \item \textbf{Safety Goal:} A quick way to manual shutoff pacing of ventricular pulses.
+    \item \textbf{Rationale:} In case the ventricular pacing malfunctions a pushbutton to quickly stop the pacing can be used. 
+    \item \textbf{Evidence:} Shown in demo but can be seen in the code logic
+    \begin{tcolorbox}
+        \begin{figure}[H]
+            \centering 
+            \includegraphics[width=\textwidth]{ventinhib.png}
+            \caption{Simulink Inhibiting Ventricular Pulses}
+        \end{figure}
+    \end{tcolorbox}
+\end{enumerate}
+
 
 \newpage
-
-
 
 \section{Requirements Potential Changes}
 
 \begin{enumerate}[label=]
     \item \textbf{Pacing Modes:} Addition of all pacing modes such as dual chamber modes.
+    \item \textbf{Strict Pacing Times:} The pacing loop must execute within a strict maximum execution time. If a pulse needs 
+    to be accurate the code can not be taking time to process serial data. 
+    \item \textbf{Must be Optimized for Battery Life:} Our pacemaker has nearly infinite power being connected to dedicated power supplies, however, pacemakers need 
+    to run off batteries for very long periods of time. 
+    \item \textbf{Magnet Safe:} The pacemaker may experience EMI and will need to be able to pass a magnet test before being able to 
+    be deployed. EMI may cause malfunctions or failures of equipment and is thus crucial for safety cricital operation.
 
 \end{enumerate}
 
@@ -1260,38 +1267,105 @@ section will be more comprehensive.
 \section{Design Decision Potential Changes}
 
 \begin{enumerate}[label=]
-    \item \textbf{Expansion of Libraries:} 
+    \item \textbf{Interupt Based Approach:} Using hardware based timers to detect events rather than polling.
+    \item \textbf{Implementation of a Watchdog:} Using a watch dog timer to detect when a failure occurs such as a looping or no pulse when one is needed and fixing accordingly. 
+    A doctor can not be watching a patient 24/7 and must be able to correct its own errors. 
 \end{enumerate}
 
 \newpage
 \section{Module Description}
+\subsection{Simulink System (Model-Based Design)}
 
-Although breifly highlighted in the \hyperref[dessec]{design section} of this documentation. This section will go 
-into more detail about the purpose of each module, key functionality, variables, and how each module interacts with 
-one another. 
+\subsubsection*{Description}
+The Simulink project functions as a closed-loop simulation environment designed to validate the pacemaker logic against a simulated patient heart model before hardware deployment. It consists of two primary subsystems: the \textbf{Device Model} (Pacemaker) and the \textbf{Environment Model} (Heart \& Activity).
 
-As shown in \hyperref[SimWholeView]{Figure 1}, there are 3 primary modules operating the pacemaker; \textbf{input constant variables, 
-stateflow logic for modes, and hardware hiding.}
+\subsubsection*{Key Sub-Modules}
 
-\subsection{Input Constant Variables Module}
-This module is highlighted in the \hyperref[dessec]{design section}. It goes through all the state variables that 
-are changeable parameters of the pacemaker. These inputs include general inputs such as the pacing mode, low rate interval, and hysteresis settings, as well 
-as parameters for atrial and ventricle pacing. These parameters are then used in the stateflow logic module to 
-complete pacing to user specifications.
+\subsubsubsection*{1. Heart \& Patient Model (Environment)}
+\begin{itemize}
+    \item \textbf{Function:} Simulates intrinsic cardiac activity (Atrial and Ventricular signals) and patient physical activity.
+    \item \textbf{Inputs:} User-adjustable sliders for Natural Heart Rate (bpm), pulse widths, and AV Delay.
+    \item \textbf{Outputs:} Generates analog-like electrical signals representing the heart's intrinsic behavior to feed into the sensing channels of the pacemaker.
+\end{itemize}
 
-\subsection{Stateflow Logic}
-This module has many submodules which are also covered in the \hyperref[dessec]{design section}. The overall state machine controlling 
-mode selection and reseting of variables to prevent unwanted pacing behaviour is shown in \hyperref[StateMod]{Figure 4}. This module 
-converts input parameters into raw data that can be further converted to electrical signals. This module recieves data 
-from the input constant variables module as well as from the monitored input variables. This module then feeds into 
-hardware hiding. 
+\subsubsubsection*{2. Pacemaker Logic (Device)}
+\begin{itemize}
+    \item \textbf{State Machine:} Implements the timing cycles and logic for standard pacing modes (AOO, VOO, AAI, VVI) and their rate-adaptive counterparts (AOOR, VOOR, AAIR, VVIR) as well as the bonus DDDR.
+    \item \textbf{Rate Adaptation Block:} Processes simulated accelerometer input to calculate the activity level. It utilizes tunable parameters found in the testing documents: Activity Threshold, Reaction Time (time to increase rate), Response Factor, and Recovery Time (time to decrease rate).
+    \item \textbf{Timing Control:} Manages Lower Rate Limit (LRL), Upper Rate Limit (MSR), Refractory Periods (ARP/VRP/PVARP), and Hysteresis.
+    \item \textbf{Pulse Generation:} Outputs logical pacing triggers based on the expiration of timing cycles or lack of intrinsic sensing.
+\end{itemize}
 
-\subsection{Hardware Hiding}
-Hardware hiding is also briefly covered in the \hyperref[dessec]{design section}. The purpose of this module is 
-to convert the signals from the stateflow logic module into outputted electrical signals through pins. As shown in 
-\hyperref[HardHide]{Figure 9}, pins are mapped to certain electrical signals such as atrial outputs, ventricle outputs, 
-front end signals, and general pin configurations such as grounding pins. This is designed to ensure coding and modules 
-are easier to debug with higher level identification and function of each GPIO. 
+\subsection{DCM Application}
+
+\subsubsection*{Description}
+The DCM is a desktop application built using Python and \texttt{customtkinter} that follows a Model-View-Controller (MVC) architecture. It manages user authentication, programmable device parameters, real-time data visualization, and serial communication with the pacemaker hardware (FRDM-K64F).
+
+\subsubsection*{Architecture Breakdown}
+
+\subsubsubsection*{A. Controller (\texttt{controller.py})}
+\begin{itemize}
+    \item \textbf{Role:} The core of the application.
+    \item \textbf{Functionality:}
+    \begin{itemize}
+        \item Initializes the main application window and manages navigation between views (Welcome, Login, Main Dashboard, Egrams).
+        \item Holds the global state for the active session (current user, serial connection status, font size settings).
+        \item Mediates data flow between the GUI Views and the Backend Models.
+        \item Manages the background thread for Text-to-Speech audio feedback upon connection.
+    \end{itemize}
+\end{itemize}
+
+\subsubsubsection*{B. Models (Data \& Logic Layers)}
+\begin{itemize}
+    \item \textbf{User Model (\texttt{models/user\_model.py}):}
+    \begin{itemize}
+        \item Manages the local database (\texttt{users.json}).
+        \item Handles user registration (limit 10 users) and authentication logic.
+    \end{itemize}
+    \item \textbf{Pacing Model (\texttt{models/pacing\_model.py}):}
+    \begin{itemize}
+        \item Manages persistence of device parameters (\texttt{pacing\_settings.json}).
+        \item Stores and retrieves parameter sets keyed by \texttt{User $\to$ Pacing Mode}.
+    \end{itemize}
+    \item \textbf{Serial Communication (\texttt{models/serial\_comms.py}):}
+    \begin{itemize}
+        \item \textbf{Driver Layer:} Wrapper around \texttt{pyserial}. Handles port scanning, connection, and disconnection.
+        \item \textbf{Protocol Handling:} Implements the byte-level communication protocol using \texttt{struct}.
+        \begin{itemize}
+            \item \textit{Parameter Send:} Packs 18 parameters (Mode, LRL, MSR, Amplitudes, Pulse Widths, Rate Adaptive settings) into binary packets.
+            \item \textit{Echo/Verification:} Requests and unpacks data from the hardware to verify saved settings.
+            \item \textit{Egram Streaming:} Implements a sync-based reader that buffers incoming real-time cardiac data (Atrial/Ventricular floats) for graphing.
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsubsubsection*{C. Views (GUI Layer)}
+\begin{itemize}
+    \item \textbf{Login Views (\texttt{views/login\_views.py}):}
+    \begin{itemize}
+        \item Provides the ``Welcome'' and ``Register'' screens.
+        \item Handles input validation for creating new users and logging in.
+    \end{itemize}
+    \item \textbf{Main View (\texttt{views/main\_view.py}):}
+    \begin{itemize}
+        \item \textbf{Dashboard:} The primary interface for the user.
+        \item \textbf{Mode Selection:} Allows selection of 8 pacing modes (AOO, VVI, VVIR, etc.).
+        \item \textbf{Parameter Entry:} Dynamically generates input fields based on the selected mode. Includes strict input validation (e.g., LRL 30-175ppm, Reaction Time 10-50s) and error handling.
+        \item \textbf{Hardware Debug:} A dedicated panel for testing LED indicators on the board via serial commands.
+    \end{itemize}
+    \item \textbf{Egram View (\texttt{views/egram\_view.py}):}
+    \begin{itemize}
+        \item \textbf{Real-Time Plotting:} Uses \texttt{matplotlib} with the \texttt{TkAgg} backend to render electrograms.
+        \item \textbf{Performance:} Implements Blitting (drawing only changed pixels) to ensure smooth animation of high-frequency signal data.
+        \item \textbf{Controls:} Allows the user to Start/Stop streaming and toggle between Atrial, Ventricular, or Dual-channel views.
+    \end{itemize}
+\end{itemize}
+
+\subsubsubsection*{D. Accessibility Features}
+\begin{itemize}
+    \item \textbf{Global Font Scaling:} The application supports dynamic font resizing (A+/A- buttons) across all views to assist visually impaired users.
+    \item \textbf{Audio Feedback:} Uses \texttt{pyttsx3} to provide auditory confirmation when the pacemaker hardware is successfully connected.
+\end{itemize}
 
 \newpage
 \section{Testing}
@@ -1312,7 +1386,8 @@ are easier to debug with higher level identification and function of each GPIO.
 \begin{tcolorbox}
     \begin{figure}[H]        
         \label{AOOtest}
-        \includegraphics[width=\textwidth]{AOOtest1.png}
+        \centering
+        \includegraphics[width=0.9\textwidth]{AOOtest1.png}
         \caption{AOO Test}
     \end{figure}
 \end{tcolorbox}
@@ -1323,12 +1398,12 @@ are easier to debug with higher level identification and function of each GPIO.
 \begin{tcolorbox}
     \begin{figure}[H]
         \label{AOOpulse}
-        \includegraphics[width=\textwidth]{AOOPulseClose.png}
+        \centering
+        \includegraphics[width=0.9\textwidth]{AOOPulseClose.png}
         \caption{Close-up of AOO Pulse}
     \end{figure}
 \end{tcolorbox}
 
-\newpage
 \subsubsection{Testing of VOO}
 
 \begin{enumerate}[label=]
@@ -1343,18 +1418,19 @@ are easier to debug with higher level identification and function of each GPIO.
 \begin{tcolorbox}
     \begin{figure}[H]
         \label{VOOtest}
-        \includegraphics[width=\textwidth]{VOOtest.png}
+        \centering
+        \includegraphics[width=0.9\textwidth]{VOOtest.png}
         \caption{VOO Test}
     \end{figure}
 \end{tcolorbox}
 
-\newpage
 \hyperref[VOOpulseclose]{Figure 13} below shows a zoomed in view of one of the pulses in the VOO test above, \hyperref[VOOtest]{Figure 12}
 
 \begin{tcolorbox}
     \begin{figure}[H]
         \label{VOOpulseclose}
-        \includegraphics[width=\textwidth]{VOOpulseclose.png}
+        \centering
+        \includegraphics[width=0.9\textwidth]{VOOpulseclose.png}
         \caption{Close-up of VOO Pulse}
     \end{figure}
 \end{tcolorbox}
@@ -1543,6 +1619,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsection{Testing of AOOR}
 
 \subsubsection{Test 1: AOOR at Rest (No Movement)}
@@ -1568,6 +1645,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 2: AOOR with Increased Movement}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality while the patient has increased movement.
@@ -1584,6 +1662,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 3: AOOR Maximum Sensor Rate}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality while the patient has increased movement for a prolonged period of time.
@@ -1601,6 +1680,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsection{Testing of VOOR}
 
 \subsubsection{Test 1: VOOR at Rest (No Movement)}
@@ -1628,6 +1708,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 2: VOOR with Increased Movement}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic VOOR functionality while the patient has increased movement.
@@ -1645,6 +1726,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 3: VOOR Maximum Sensor Rate}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic VOOR functionality while the patient has increased movement for prolonged period of time.
@@ -1662,6 +1744,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsection{Testing of AAIR}
 
 \subsubsection{Test 1: AAIR at Rest (0 BPM)}
@@ -1681,6 +1764,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 2: AAIR at Rest (45 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at rest with natural heart beat at 45 bpm.
@@ -1698,6 +1782,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 3: AAIR at Rest (75 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at rest with natural heartbeat of 75 bpm.
@@ -1715,6 +1800,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 4: AAIR with Increased Movement (45 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at increased movement with natural heartbeat of 45 bpm.
@@ -1732,6 +1818,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 5: AAIR Maximum Sensor Rate (45 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at increased movement over a prolonged period with natural heartbeat of 45 bpm.
@@ -1749,6 +1836,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 6: AAIR Maximum Sensor Rate (75 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic AAIR functionality at increased movement over a prolonged period with natural heartbeat of 75 bpm.
@@ -1766,6 +1854,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsection{Testing of VVIR}
 
 \subsubsection{Test 1: VVIR at Rest (0 BPM)}
@@ -1785,6 +1874,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 2: VVIR at Rest (45 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at rest with natural heart beat at 45 bpm.
@@ -1802,6 +1892,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 3: VVIR at Rest (75 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at rest with natural heartbeat of 75 bpm.
@@ -1819,6 +1910,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 4: VVIR with Increased Movement (45 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at increased movement with natural heartbeat of 45 bpm.
@@ -1836,6 +1928,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 5: VVIR Maximum Sensor Rate (45 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at increased movement over a prolonged period with natural heartbeat of 45 bpm.
@@ -1853,6 +1946,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 6: VVIR Maximum Sensor Rate (75 BPM)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic VVIR functionality at increased movement over a prolonged period with natural heartbeat of 75 bpm.
@@ -1870,6 +1964,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsection{Rate Adaptive Tuning Testing}
 
 \subsubsection{Test 1: Recovery Time Testing (30 seconds)}
@@ -1922,7 +2017,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
-
+\newpage
 \subsubsection{Test 3: Reaction Time Testing (10 seconds)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality for the reaction time tuning.
@@ -1948,6 +2043,7 @@ are easier to debug with higher level identification and function of each GPIO.
     \end{figure}
 \end{tcolorbox}
 
+\newpage
 \subsubsection{Test 4: Reaction Time Testing (30 seconds)}
 \begin{enumerate}[label=]
     \item \textbf{Purpose:} The purpose of this test is to test basic AOOR functionality for the reaction time tuning.
@@ -2095,6 +2191,100 @@ from the previous test.
     \end{figure}
 \end{tcolorbox}
 
+\subsubsection{Font Size Accessibility Controls}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} To verify that font size controls improve accessibility by allowing users to enlarge or reduce text for clearer visibility.
+    \item \textbf{Input Conditions:} The user presses either \textbf{A+} to increase font size or \textbf{A-} to decrease font size.
+    \item \textbf{Expected Output:} All visible text elements update to a larger or smaller size immediately, including labels, buttons, radio buttons, and plot titles. The layout remains stable.
+    \item \textbf{Actual Output:} Pressing \textbf{A+} increased font size across all interface elements. Pressing \textbf{A-} reduced size consistently. All components updated correctly and remained properly aligned.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{fontsize.png}
+        \caption{Accessibility Interface: Font Size Adjustment}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Manual Entry of ``OFF'' in Programmable Field}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} To confirm that typing ``OFF'' into a programmable parameter field is recognized as a valid symbolic value and updates the internal model correctly.
+    \item \textbf{Input Conditions:} The user manually types ``OFF'' into a programmable text entry field, such as amplitude, sensitivity, or refractory period.
+    \item \textbf{Expected Output:} The system should accept ``OFF'' as a valid entry, convert it to the correct internal value (such as zero or the OFF code), and display ``OFF'' in the interface without errors.
+    \item \textbf{Actual Output:} Typing ``OFF'' was accepted. The field saved the OFF state, the internal parameter was updated correctly, and the value was transmitted in the outgoing packet with the proper OFF code.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{offtest.png}
+        \caption{Allowing of OFF In Parameters}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Error When Incrementing Values Not by 0.1}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} To confirm that the system rejects values that are not valid increments of 0.1 and provides a clear error message.
+    \item \textbf{Input Conditions:} The user types a value such as 2.37 or 0.15 into a field that only allows increments of 0.1.
+    \item \textbf{Expected Output:} The system should detect the invalid step size, prevent saving the value, highlight the field, and show an error message explaining that only 0.1 increments are allowed.
+    \item \textbf{Actual Output:} The system displayed an error, rejected the invalid value, and restored the previous valid value. No incorrect data was saved or transmitted.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{incre.png}
+        \caption{Incorrect Incrementing of Value Test}
+    \end{figure}
+\end{tcolorbox}
+
+\subsubsection{Amplitude Range 0.1--5.0 V}
+\begin{enumerate}[label=]
+    \item \textbf{Purpose:} Verify that the A or V Pulse Amplitude field rejects values outside the allowed range of 0.1 V to 5.0 V.
+    \item \textbf{Input Conditions:} User types the following values into the amplitude field and presses Save:
+    \begin{itemize}
+        \item Test A: 5.5
+        \item Test B: 0
+        \item Test C: -0.1
+    \end{itemize}
+    \item \textbf{Expected Output:} For each invalid value the system should:
+    \begin{itemize}
+        \item Show an error message stating that amplitude must be between 0.1 V and 5.0 V.
+        \item Prevent the value from being saved.
+        \item Keep or restore the previous valid value.
+    \end{itemize}
+    \item \textbf{Actual Output:} For 5.5, 0, and -0.1, the DCM displayed an error message that the amplitude must be within 0.1--5.0 V, did not save the invalid entry, and left the previous valid amplitude in the field. No incorrect data was written to \texttt{pacing\_settings.json}.
+    \item \textbf{Result:} Pass
+\end{enumerate}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{high.png}
+        \caption{Input Validation Error Dialogue (Too high)}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{low.png}
+        \caption{Input Validation Error Dialogue (Too low)}
+    \end{figure}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\textwidth]{neg.png}
+        \caption{Input Validation Error Dialogue (Negative Values)}
+    \end{figure}
+\end{tcolorbox}
+
 \newpage
 \section{GenAI Usage}
 
@@ -2103,6 +2293,6 @@ Tkinter app with a welcome screen, registration and login, JSON storage capped a
 adapted and tested. We also used it to clarify Python functions and libraries such as Tkinter, JSON, etc. 
 and to troubleshoot installing tkinter. We had AI to clarify comments within the code as well. All design 
 decisions, requirements, and validation were done by our team, and we reviewed and verified all AI outputs 
-before inclusion. 
+before inclusion. Furthermore, AI was to used as a search engine for debugging of both Simulink and DCM issues.
 
 \end{document}
